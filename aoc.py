@@ -49,17 +49,9 @@ def day_5():
 def day_6():
     #answers = [set(c for line in group for c in line.strip()) for group in  open("6.txt").read().split("\n\n")]
     #pprint(sum(len(answer) for answer in answers))
+
     answers = [[set(line.strip()) for line in group.split("\n") if line.strip()] for group in  open("6.txt").read().split("\n\n")]
-    pprint(answers)
-
-    s = 0
-    for group in answers:
-        r = set(c for answer in group for c in answer)
-        for answer in group:
-            r = r.intersection(set(c for c in answer))
-        s += len(r)
-
-    pprint(s)
+    pprint(sum([len(functools.reduce(operator.and_, [set(c for c in answer) for answer in group],set(c for answer in group for c in answer))) for group in answers]))
 
 
 def day_7():
@@ -72,4 +64,4 @@ def day_7():
     print(len(get_contains("shiny gold")) - 1)
     print(get_num_bags("shiny gold"))
 
-day_7()
+day_6()
