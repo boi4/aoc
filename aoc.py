@@ -65,37 +65,20 @@ def day_7():
     print(get_num_bags("shiny gold"))
 
 def day_8():
-    orig_code = [line.strip().split() for line in open("8.txt")]
+    orig_code = [(line.strip().split()[0],int(line.strip().split()[1])) for line in open("8.txt")]
+
     def sim(code):
-        acc = 0
-        ip = 0
-        visited = set()
+        ip,visited = 0,set()
         while ip not in visited and ip < len(code):
             visited.add(ip)
-            if code[ip][0] == "acc":
-                acc += int(code[ip][1])
-                ip += 1
-            elif code[ip][0] == "jmp":
-                ip += int(code[ip][1])
-            elif code[ip][0] == "nop":
-                ip += 1
-        return acc,(ip == len(code))
+            ip += code[ip][1] if code[ip][0] == "jmp" else 1
+        return sum(orig_code[i][1] for i in visited if orig_code[i][0] == "acc"),(ip == len(code))
 
     print(sim(orig_code)[0])
 
     for i in range(len(orig_code)):
-        code = list(orig_code)
-        if orig_code[i][0] == "nop":
-            code[i] = ("jmp", orig_code[i][1])
-            a,b = sim(code)
-            if b:
-                print(a)
-                continue
-        if orig_code[i][0] == "jmp":
-            code[i] = ("nop", orig_code[i][1])
-            a,b = sim(code)
-            if b:
-                print(a)
-                continue
+        code = orig_code[:i] + [({"jmp":"nop","nop":"jmp","acc":"acc"}[orig_code[i][0]],orig_code[i][1])] + orig_code[i+1:]
+        a,b = sim(code)
+        b and print(a)
 
 day_8()
