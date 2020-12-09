@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import re
 import functools
+import itertools
 import operator
 from pprint import pprint
 
@@ -13,14 +14,17 @@ def day_1():
     numbers = [int(a.strip()) for a in open("1.txt").read().split("\n") if a.strip()]
     print([a * b * c for a in numbers for b in numbers for c in numbers if a + b + c == 2020])
 
+
 def day_2():
     lines = [re.match(r"(\d+)-(\d+) (.): (.*)", a.strip()).groups() for a in open("2.txt").read().split("\n") if a.strip()]
     #print(sum([1 for a in lines if (int(a[0]) <= a[3].count(a[2]) <= int(a[1]))]))
     print(sum([1 for a in lines if (a[3][int(a[0]) - 1] == a[2]) ^ (a[3][int(a[1]) -1] == a[2])]))
 
+
 def day_3():
     lines = [line.strip() for line in open("3.txt")]
     print(product([functools.reduce(lambda acc, t: acc + int((t[1][(t[0] * right) % len(lines[0])] == "#")), enumerate(lines[::down]), 0) for (right,down) in [(1,1),(3,1),(5,1),(7,1),(1,2)]]))
+
 
 def day_4():
     #passports = [[k.split(":")[0] for k in pp.split()] for pp in open("4.txt").read().split("\n\n")]
@@ -34,6 +38,7 @@ def day_4():
         "hcl" in k and re.match(r"^#[0-9a-f]{6}$", k["hcl"]),
         "ecl" in k and k["ecl"] in ["amb", "blu", "brn", "gry", "grn", "hzl", "oth"],
         "pid" in k and re.match(r"^\d{9}$", k["pid"])])]))
+
 
 def day_5():
     vals = sorted([int("".join({"F":"0","B":"1","L":"0","R":"1"}[c] for c in line.strip()),2) for line in open("5.txt")])
@@ -64,6 +69,7 @@ def day_7():
     print(len(get_contains("shiny gold")) - 1)
     print(get_num_bags("shiny gold"))
 
+
 def day_8():
     orig_code = [(line.strip().split()[0],int(line.strip().split()[1])) for line in open("8.txt")]
 
@@ -81,4 +87,11 @@ def day_8():
         a,b = sim(code)
         b and print(a)
 
-day_8()
+
+def day_9():
+    ns = [int(line.strip()) for line in open("9.txt")]
+    a = [a for i,a in enumerate(ns) if i >= 25 and not any(b+c == a for b,c in itertools.product(ns[i-25:i],repeat=2))][0]
+    #print(a)
+    print([max(ns[s:e])+min(ns[s:e]) for s,e in itertools.combinations(range(len(ns)+1),2) if s != e-1 and sum(ns[s:e]) == a][0])
+
+day_9()
