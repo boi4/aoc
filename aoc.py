@@ -94,4 +94,54 @@ def day_9():
     #print(a)
     print([max(ns[s:e])+min(ns[s:e]) for s,e in itertools.combinations(range(len(ns)+1),2) if s != e-1 and sum(ns[s:e]) == a][0])
 
-day_9()
+
+def day_10():
+    ns = sorted([int(line.strip()) for line in open("10.txt")])
+    ns.insert(0,0)
+    ns.append(ns[-1] + 3)
+#    from collections import defaultdict
+#    a = defaultdict(int)
+#
+#    ok = False
+#    for i,n in enumerate(ns):
+#        if i == len(ns) - 1:
+#            continue
+#        a[ns[i+1]-n]+=1;
+
+    a = []
+    for i,n in enumerate(ns):
+        if i == len(ns) - 1:
+            continue
+        b = ns[i+1]-n 
+        a.append(b)
+    print(a)
+    i = 0
+    counts = []
+    while i < len(a):
+        count = 0
+        while a[i] == 1:
+            count += 1
+            i += 1
+        if count:
+            counts.append(count)
+        i += 1
+    print(counts)
+
+    @functools.cache
+    def combs(n): return 1 if n < 2 else 2 if n == 2 else combs(n-1) + combs(n-2) + combs(n-3)
+
+    def combs2(n):
+        count = 0
+        for i in range(1,n+1):
+            for c in itertools.product([1,2,3], repeat=i):
+                if sum(c) == n:
+                    #print(n,c)
+                    count += 1
+        return count
+
+    for i in range(10):
+        print(i, combs(i), combs2(i))
+    #print(product([combs(count) for count in counts]))
+
+
+day_10()
