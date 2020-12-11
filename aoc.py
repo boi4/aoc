@@ -113,31 +113,20 @@ def day_10():
 
 def day_11():
 
-    def round(seats):
+    directions = [(drow,dcol) for dcol in range(-1,2) for drow in range(-1,2) if (drow,dcol) != (0,0)]
+
+    def round1(seats):
         new_seats = [row.copy() for row in seats]
         for row in range(1,len(seats)-1):
             for col in range(1,len(seats[row])-1):
-                if seats[row][col] == "L":
-                    if all([a != "#" for a in [seats[row][col-1],
-                        seats[row][col+1], seats[row-1][col],
-                        seats[row+1][col],
-                        seats[row-1][col-1], seats[row+1][col-1],
-                        seats[row-1][col+1], seats[row+1][col+1]
-                        ]]):
+                count = sum(seats[row+drow][col+dcol] == "#" for drow,dcol in directions)
+                if seats[row][col] == "L" and count == 0:
                         new_seats[row][col] = "#"
-                elif seats[row][col] == "#":
-                    if sum([int(a == "#") for a in [seats[row][col-1],
-                        seats[row][col+1], seats[row-1][col],
-                        seats[row+1][col],
-                        seats[row-1][col-1], seats[row+1][col-1],
-                        seats[row-1][col+1], seats[row+1][col+1]
-                        ]]) >= 4:
+                elif seats[row][col] == "#" and count >= 4:
                         new_seats[row][col] = "L"
-                    
         return new_seats
 
     def round2(seats):
-        directions = [(drow,dcol) for dcol in range(-1,2) for drow in range(-1,2) if (drow,dcol) != (0,0)]
         new_seats = [row.copy() for row in seats]
 
         for row in range(1,len(seats)-1):
