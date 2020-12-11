@@ -108,7 +108,96 @@ def day_10():
     @functools.cache
     def combs(n): return 1 if n < 2 else 2 if n == 2 else combs(n-1) + combs(n-2) + combs(n-3)
 
-    print(product([combs(count) for count in counts]))
+    print(product(combs(count) for count in counts))
 
 
-day_10()
+def day_11():
+
+    def round(seats):
+        new_seats = [row.copy() for row in seats]
+        for row in range(1,len(seats)-1):
+            for col in range(1,len(seats[row])-1):
+                if seats[row][col] == "L":
+                    if all([a != "#" for a in [seats[row][col-1],
+                        seats[row][col+1], seats[row-1][col],
+                        seats[row+1][col],
+                        seats[row-1][col-1], seats[row+1][col-1],
+                        seats[row-1][col+1], seats[row+1][col+1]
+                        ]]):
+                        new_seats[row][col] = "#"
+                elif seats[row][col] == "#":
+                    if sum([int(a == "#") for a in [seats[row][col-1],
+                        seats[row][col+1], seats[row-1][col],
+                        seats[row+1][col],
+                        seats[row-1][col-1], seats[row+1][col-1],
+                        seats[row-1][col+1], seats[row+1][col+1]
+                        ]]) >= 4:
+                        new_seats[row][col] = "L"
+                    
+        return new_seats
+
+    def round2(seats):
+        directions = [(drow,dcol) for dcol in range(-1,2) for drow in range(-1,2) if (drow,dcol) != (0,0)]
+        new_seats = [row.copy() for row in seats]
+
+        for row in range(1,len(seats)-1):
+            for col in range(1,len(seats[row])-1):
+                val = seats[row][col]
+                if val == ".":
+                    continue
+
+                count = 0
+                for drow,dcol in directions:
+                    tmp = ((row + drow*s,col + dcol*s) for s in range(1,min(len(seats),len(seats[0]))))
+                    tmp = itertools.takewhile(lambda x: 0 <= x[0] < len(seats) and 0 <= x[1] < len(seats[0]), tmp)
+                    trace = (seats[row2][col2] for row2,col2 in tmp)
+                    trace = list(trace)
+
+                    a = list(itertools.dropwhile(lambda c: c not in ["#","L"], trace))
+                    if a and a[0] == "#":
+                        count += 1
+                        #if val == "L":
+                            #break
+                        #elif count >= 5:
+                            #break
+
+
+                if val == "L" and count == 0:
+                    new_seats[row][col] = "#"
+                elif val == "#" and count >= 5:
+                    new_seats[row][col] = "L"
+                    
+        return new_seats
+
+    seats = [list(line.strip()) for line in open("11.txt")]
+    #seats = [list(line.strip()) for line in open("a")]
+    seats.append( len(seats[0]) * ["."])
+    seats.insert(0,len(seats[0]) * ["."])
+    seats = [["."] + row + ["."] for row in seats]
+
+    #pprint(seats)
+
+    c = 0
+    while True:
+        print(c)
+        c += 1
+        new_seats = round2(seats)
+        #pprint(new_seats)
+        eq = True
+        for row in range(1,len(seats)-1):
+            for col in range(1,len(seats[row])-1):
+                if new_seats[row][col] != seats[row][col]:
+                    eq = False
+        if eq:
+            break
+        seats = new_seats
+
+    count = 0
+    for row in range(1,len(seats)-1):
+        for col in range(1,len(seats[row])-1):
+            if seats[row][col] == "#":
+                count += 1
+    print(count)
+
+
+day_11()
