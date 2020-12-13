@@ -235,16 +235,6 @@ def day_13():
 
     busses = [(int(l),i) for i,l in enumerate(lines[1].split(',')) if l != "x"]
 
-    def eea(a,b):
-        """
-        kgv, alpha, beta
-        """
-        if b == 0:
-            return (a,1,0)
-
-        (ds,ss,ts) = eea(b, a % b)
-        return (ds, ts, ss - ((a // b) * ts))
-
     def crt(modulun, values):
         M = product(modulun)
         xs = []
