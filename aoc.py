@@ -4,6 +4,7 @@ import functools
 import itertools
 import operator
 import re
+import math
 from pprint import pprint
 
 
@@ -189,4 +190,77 @@ def day_11():
     print(count)
 
 
-day_11()
+def day_12():
+    dirs = {"E" : (1,0), "S": (0,1), "W": (-1,0), "N": (0,-1)}
+    dirs2 = ["E", "S", "W", "N"]
+    ins = [(line[0:1],int(line[1:].strip())) for line in open("12.txt")]
+    #ins = [(line[0:1],int(line[1:].strip())) for line in open("a")]
+
+    dir = "E"
+    pos = (0,0)
+    for instr in ins:
+        if instr[0] == "F":
+            pos = (pos[0] + instr[1] * dirs[dir][0], pos[1] + instr[1] * dirs[dir][1])
+        elif instr[0] == "R":
+            dir = dirs2[(dirs2.index(dir) + instr[1]//90) % 4]
+        elif instr[0] == "L":
+            dir = dirs2[(dirs2.index(dir) - instr[1]//90) % 4]
+        else:
+            pos = (pos[0] + instr[1] * dirs[instr[0]][0], pos[1] + instr[1] * dirs[instr[0]][1])
+
+    print(abs(pos[0]) + abs(pos[1]))
+
+
+    wp = (10,-1)
+    pos = (0,0)
+    for instr in ins:
+        if instr[0] == "F":
+            pos = (pos[0] + instr[1] * wp[0], pos[1] + instr[1] * wp[1])
+        elif instr[0] == "R":
+            for i in range(instr[1]//90):
+                wp = (-wp[1],wp[0])
+        elif instr[0] == "L":
+            for i in range(instr[1]//90):
+                wp = (wp[1],-wp[0])
+        else:
+            wp = (wp[0] + instr[1] * dirs[instr[0]][0], wp[1] + instr[1] * dirs[instr[0]][1])
+
+    print(abs(pos[0]) + abs(pos[1]))
+
+
+def day_13():
+    lines = [line.strip() for line in open("13.txt")]
+    #lines = [line.strip() for line in open("a")]
+    earliest = int(lines[0])
+
+    busses = [(int(l),i) for i,l in enumerate(lines[1].split(',')) if l != "x"]
+
+    def eea(a,b):
+        """
+        kgv, alpha, beta
+        """
+        if b == 0:
+            return (a,1,0)
+
+        (ds,ss,ts) = eea(b, a % b)
+        return (ds, ts, ss - ((a // b) * ts))
+
+    def crt(modulun, values):
+        M = product(modulun)
+        xs = []
+        for m_i,a_i in zip(modulun, values):
+            M_i = M//m_i
+            s_i = pow(M_i, -1, m_i)
+            xs.append(a_i * M_i * s_i)
+        return sum(xs) % M
+
+    waits = [bus - (earliest % bus) for bus,_ in busses]
+    print(busses[waits.index(min(waits))][0] * min(waits))
+
+
+    vs = [v for v,_ in busses]
+    v2s = [v-i for v,i in busses]
+    print(crt(vs, v2s))
+
+
+day_13()
