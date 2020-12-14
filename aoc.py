@@ -3,9 +3,12 @@ import collections
 import functools
 import itertools
 import operator
+import os
 import re
 import math
+import subprocess
 from pprint import pprint
+from datetime import datetime
 
 
 def product(it):
@@ -253,4 +256,48 @@ def day_13():
     print(crt(vs, v2s))
 
 
-day_13()
+def day_14():
+    lines = [line.strip() for line in open("14.txt")]
+    #lines = [line.strip() for line in open("a")]
+
+    memory = collections.defaultdict(int)
+    mask = 36*"X"
+    for line in lines:
+        comm = line.split("=")[0].strip()
+        if comm == "mask":
+            mask = line.split("=")[1].strip()
+        else:
+            addr = int(re.match(r"^mem\[(\d+)\]$", comm).groups()[0])
+            val = bin(int(line.split("=")[1].strip()))[2:].rjust(36, "0")
+            memory[addr] = int("".join(m if m != "X" else c for c,m in zip(val, mask)),2)
+
+    #print("\n".join(f"{k:3}: {v}" for k,v in memory.items()))
+    print(sum(memory.values()))
+
+    memory = collections.defaultdict(int)
+    mask = 36*"X"
+    for line in lines:
+        comm = line.split("=")[0].strip()
+        if comm == "mask":
+            mask = line.split("=")[1].strip()
+        else:
+            addr = bin(int(re.match(r"^mem\[(\d+)\]$", comm).groups()[0]))[2:].rjust(36, "0")
+            val = int(line.split("=")[1].strip())
+            addr_floating = "".join(c if m == "0" else "1" if m == "1" else "X" for c,m in zip(addr, mask))
+            indizes = [i for i,c in enumerate(addr_floating) if c == "X"]
+            for i in range(2**len(indizes)):
+                i2 = bin(i)[2:].rjust(len(indizes), "0")
+                addr2 = list(addr_floating)
+
+                for j,bit in zip(indizes, i2):
+                    addr2[j] = bit
+
+                memory[int("".join(addr2),2)] = val
+    print(sum(memory.values()))
+
+
+day = datetime.now().day
+if not f"{day}.txt" in os.listdir():
+    subprocess.run(["zsh", "-ic", f"wgetcook https://adventofcode.com/2020/day/{day}/input -O {day}.txt"])
+
+locals()[f"day_{day}"]()
