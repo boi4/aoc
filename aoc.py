@@ -296,6 +296,29 @@ def day_14():
     print(sum(memory.values()))
 
 
+def day_15():
+    last_index = collections.defaultdict(int)
+    vals = [int(i) for i in next(open("15.txt")).strip().split(",")]
+
+    for i,v in enumerate(vals[:-1]):
+        last_index[v] = i + 1
+
+    i = len(vals)
+    val = vals[-1]
+    while True:
+        if val in last_index:
+            tmp = last_index[val]
+            last_index[val] = i
+            val = i - tmp
+        else:
+            last_index[val] = i
+            val = 0
+        if i+1 == 30000000:
+            print(val)
+            break
+        i += 1
+
+
 day = datetime.now().day
 if not f"{day}.txt" in os.listdir():
     subprocess.run(["zsh", "-ic", f"wgetcook https://adventofcode.com/2020/day/{day}/input -O {day}.txt"])
