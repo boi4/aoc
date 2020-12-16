@@ -319,6 +319,55 @@ def day_15():
         i += 1
 
 
+
+def day_16():
+    fields,myticket,tickets = [[line.strip() for line in f.split("\n") if line.strip()] for f in open("16.txt").read().split("\n\n")]
+    fields = {field.split(":")[0].strip():[range(int(a.strip()),int(b.strip())+1) for a,b in [f.split("-") for f in field.split(":")[1].split("or")]] for field in fields}
+
+    myticket = [int(val) for val in myticket[1].split(",")]
+
+    tickets = [[int(val) for val in ticket.split(",")] for ticket in tickets[1:]]
+
+    s = 0
+    valid_tickets = []
+    for ticket in tickets:
+        valid = True
+        for val in ticket:
+            if not any(any(val in r for r in field) for field in fields.values()):
+                s += val
+                valid = False
+        if valid:
+            valid_tickets.append(ticket)
+    print(s)
+
+    ok_indizes = collections.defaultdict(list)
+    for fieldname,fieldranges in fields.items():
+        for i in range(len(myticket)):
+            if all(any(ticket[i] in r for r in fieldranges) for ticket in valid_tickets):
+                ok_indizes[fieldname].append(i)
+
+    sol = {}
+    while len(ok_indizes):
+        val = -1
+        kk = -1
+        for k,v in ok_indizes.items():
+            if len(v) == 1:
+                sol[k] = v[0]
+                val = v[0]
+                kk = k
+        if val == -1:
+            print("Oh no")
+            return
+        else:
+            del ok_indizes[kk]
+            for k,v in ok_indizes.items():
+                if val in v:
+                    v.remove(val)
+
+    print(product([myticket[i] for f,i in sol.items() if f.startswith("departure")]))
+
+
+
 day = datetime.now().day
 if not f"{day}.txt" in os.listdir():
     subprocess.run(["zsh", "-ic", f"wgetcook https://adventofcode.com/2020/day/{day}/input -O {day}.txt"])
