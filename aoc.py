@@ -373,40 +373,26 @@ def day_17():
     lines = [list(line.strip()) for line in open("17.txt")]
 
     field = collections.defaultdict(lambda :".")
+    field2 = collections.defaultdict(lambda :".")
     for y in range(len(lines)):
         for x in range(len(lines[y])):
             field[(x,y,0)] = lines[y][x]
+            field2[(x,y,0,0)] = lines[y][x]
 
-    def print_field(field):
-        a = [(min(key[i] for key in field.keys()))   for i in range(3)]
-        b = [(max(key[i] for key in field.keys()))+1 for i in range(3)]
-        boundaries = list(zip(a,b))
-        for z in range(boundaries[2][0], boundaries[2][1]):
-            print(f"z={z}")
-            for y in range(boundaries[1][0], boundaries[1][1]):
-                print("".join(field[(x,y,z)] for x in range(boundaries[0][0], boundaries[0][1])))
-
-    def round(field):
+    def round(field, ndims, switchrule):
         res = deepcopy(field)
-        a = [(min(key[i] for key in field.keys()))-1 for i in range(3)]
-        b = [(max(key[i] for key in field.keys()))+2 for i in range(3)]
-        boundaries = list(zip(a,b))
-        for x,y,z in itertools.product(*(range(*b) for b in boundaries)):
-            c = sum((field[(x+dx,y+dy,z+dz)] == "#") for dx,dy,dz in itertools.product((-1,0,1), repeat=3) if not (dx == 0 and dy == 0 and dz == 0))
-            v = field[(x,y,z)]
-            if v == "#" and c not in range(2,3+1):
-                v = "."
-                print((x,y,z))
-            elif v == "." and c == 3:
-                v = "#"
-                print((x,y,z))
-            res[(x,y,z)] = v
-
+        boundaries = list(zip(*[[(f(key[i] for key in field.keys()))-1+3*j for i in range(ndims)] for j,f in enumerate((min,max))]))
+        for coords in itertools.product(*(range(*b) for b in boundaries)):
+            c = sum((field[(*(a+b for a,b in zip(coords,deltas)),)] == "#") for deltas in itertools.product((-1,0,1), repeat=ndims) if not all(delta == 0 for delta in deltas))
+            res[(*coords,)] = "#."[("#.".index(field[(*coords,)]) + switchrule(field[(*coords,)],c)) % 2]
         return res
 
     for i in range(6):
-        field = round(field)
+        field = round(field, 3, lambda v,c: c not in range(2,3+1) if v == "#" else c in range(3,3+1))
+        field2 = round(field2, 4, lambda v,c: c not in range(2,3+1) if v == "#" else c in range(3,3+1))
+
     print(sum(v == "#" for v in field.values()))
+    print(sum(v == "#" for v in field2.values()))
 
 
 
