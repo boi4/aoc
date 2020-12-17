@@ -9,6 +9,7 @@ import math
 import subprocess
 from pprint import pprint
 from datetime import datetime
+from copy import deepcopy
 
 
 def product(it):
@@ -364,7 +365,49 @@ def day_16():
                 if val in v:
                     v.remove(val)
 
-    print(product([myticket[i] for f,i in sol.items() if f.startswith("departure")]))
+    print(product([myticket[i] for f,i in sol.items() if
+        f.startswith("departure")]))
+
+
+def day_17():
+    lines = [list(line.strip()) for line in open("17.txt")]
+
+    field = collections.defaultdict(lambda :".")
+    for y in range(len(lines)):
+        for x in range(len(lines[y])):
+            field[(x,y,0)] = lines[y][x]
+
+    def print_field(field):
+        a = [(min(key[i] for key in field.keys()))   for i in range(3)]
+        b = [(max(key[i] for key in field.keys()))+1 for i in range(3)]
+        boundaries = list(zip(a,b))
+        for z in range(boundaries[2][0], boundaries[2][1]):
+            print(f"z={z}")
+            for y in range(boundaries[1][0], boundaries[1][1]):
+                print("".join(field[(x,y,z)] for x in range(boundaries[0][0], boundaries[0][1])))
+
+    def round(field):
+        res = deepcopy(field)
+        a = [(min(key[i] for key in field.keys()))-1 for i in range(3)]
+        b = [(max(key[i] for key in field.keys()))+2 for i in range(3)]
+        boundaries = list(zip(a,b))
+        for x,y,z in itertools.product(*(range(*b) for b in boundaries)):
+            c = sum((field[(x+dx,y+dy,z+dz)] == "#") for dx,dy,dz in itertools.product((-1,0,1), repeat=3) if not (dx == 0 and dy == 0 and dz == 0))
+            v = field[(x,y,z)]
+            if v == "#" and c not in range(2,3+1):
+                v = "."
+                print((x,y,z))
+            elif v == "." and c == 3:
+                v = "#"
+                print((x,y,z))
+            res[(x,y,z)] = v
+
+        return res
+
+    for i in range(6):
+        field = round(field)
+    print(sum(v == "#" for v in field.values()))
+
 
 
 
