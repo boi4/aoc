@@ -396,6 +396,100 @@ def day_17():
 
 
 
+def day_18():
+    lines = [line.strip() for line in open("18.txt")]
+
+    def tokenize(line):
+        tokens_tmp = line.split(' ')
+        tokens = []
+        for token in tokens_tmp:
+            while token.startswith('('):
+                tokens.append("(")
+                token = token[1:]
+            c = 0
+            while token.endswith(')'):
+                c += 1
+                token = token[:-1]
+            tokens.append(token)
+            tokens += c * [')']
+
+        return tokens
+
+    def gen_tree(tokens):
+        if len(tokens) == 1:
+            return int(tokens[0])
+        elif tokens[-1] == ")":
+            d = 1
+            opening_index = -1
+            for i in range(len(tokens)-2,-1,-1):
+                if tokens[i] == '(':
+                    d -= 1
+                elif tokens[i] == ')':
+                    d += 1
+                if d == 0:
+                    opening_index = i
+                    break
+            if opening_index == 0:
+                return gen_tree(tokens[1:-1])
+            return (gen_tree(tokens[:opening_index-1]), tokens[opening_index-1], gen_tree(tokens[opening_index+1:-1]))
+        else:
+            return (gen_tree(tokens[:-2]), tokens[-2], gen_tree(tokens[-1]))
+
+    def gen_tree2(tokens):
+        if len(tokens) == 1:
+            return int(tokens[0])
+        starpos = -1
+        d = 0
+        for i in range(len(tokens)-1,-1,-1):
+            if tokens[i] == ')':
+                d += 1
+            elif tokens[i] == '(':
+                d -= 1
+            if d == 0 and tokens[i] == '*':
+                starpos = i
+                break
+        if starpos != -1:
+            return (gen_tree2(tokens[:starpos]), '*', gen_tree2(tokens[starpos+1:]))
+
+        if tokens[-1] == ")":
+            d = 1
+            opening_index = -1
+            for i in range(len(tokens)-2,-1,-1):
+                if tokens[i] == '(':
+                    d -= 1
+                elif tokens[i] == ')':
+                    d += 1
+                if d == 0:
+                    opening_index = i
+                    break
+            if opening_index == 0:
+                return gen_tree2(tokens[1:-1])
+            return (gen_tree2(tokens[:opening_index-1]), tokens[opening_index-1], gen_tree2(tokens[opening_index+1:-1]))
+        else:
+            return (gen_tree2(tokens[:-2]), tokens[-2], gen_tree2(tokens[-1]))
+
+
+    def eval_tree(tree):
+        if type(tree) == type(1):
+            return tree
+        elif tree[1] == "+":
+            return eval_tree(tree[0]) + eval_tree(tree[2])
+        elif tree[1] == "*":
+            return eval_tree(tree[0]) * eval_tree(tree[2])
+
+    def eval_line(line):
+        tokens = tokenize(line)
+        tree = gen_tree(tokens)
+        return eval_tree(tree)
+
+    def eval_line2(line):
+        tokens = tokenize(line)
+        tree = gen_tree2(tokens)
+        return eval_tree(tree)
+
+    print(sum(eval_line(line) for line in lines))
+    print(sum(eval_line2(line) for line in lines))
+
 
 day = datetime.now().day
 if not f"{day}.txt" in os.listdir():
