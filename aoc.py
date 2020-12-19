@@ -491,6 +491,68 @@ def day_18():
     print(sum(eval_line2(line) for line in lines))
 
 
+def day_19():
+    parts = open("19.txt").read().split("\n\n")
+    rules = {int(line.split(":")[0].strip()): line.split(":")[1].strip() for line in parts[0].split("\n")}
+    rules = {n: [[tok[1] if tok[0] == '"' else int(tok) for tok in r.strip().split(" ")] for r in rule.split("|")] for n,rule in rules.items()}
+    rules2 = deepcopy(rules)
+    rules2[8] = [[42],[42, 8]]
+    rules2[11] = [[42, 31],[42, 11, 31]]
+
+    # easy solution of part 1 using pythons re modules
+    #def create_pattern(rule):
+    #    if type(rule) == type("a"):
+    #        return rule
+    #    else:
+    #        return "(" + "|".join("".join(create_pattern(rule) for rule in and_rules) for and_rules in rules[rule]) + ")"
+
+    #p = "^" + create_pattern(0) + "$"
+    #print(len([line for line in parts[1].split("\n") if re.match(p,line)]))
+
+    def match_rule(line, rule, i, rules):
+        if i >= len(line):
+            return -1
+        if type(rule) == type("a"):
+            return i+1 if line[i] == rule else -1
+        matching = []
+        for and_rules in rules[rule]:
+            matches = True
+            j = i
+            for and_rule in and_rules:
+                j = match_rule(line, and_rule, j, rules)
+                if j == -1:
+                    matches = False
+                    break
+            if matches:
+                matching.append(j)
+        if len(matching) == 0:
+            return -1
+        return matching[0]
+
+    def match_rule2(line, rule, i, rules):
+        if i >= len(line):
+            return set()
+        if type(rule) == type("a"):
+            return set((i+1,)) if line[i] == rule else set()
+        matching = set()
+        for and_rules in rules[rule]:
+            positions = set((i,))
+            for and_rule in and_rules:
+                new_positions = set()
+                for position in positions:
+                    ks = match_rule2(line, and_rule, position, rules)
+                    for k in ks:
+                        new_positions.add(k)
+                positions = new_positions
+            for p in positions:
+                matching.add(p)
+        return matching
+
+    print(len([line for line in parts[1].split("\n") if match_rule(line, 0, 0, rules) == len(line)]))
+    print(len([line for line in parts[1].split("\n") if len(line) in match_rule2(line, 0, 0, rules2)]))
+    #print(match_rule(parts[1].split("\n")[0], 0, 0))
+
+
 day = datetime.now().day
 if not f"{day}.txt" in os.listdir():
     subprocess.run(["zsh", "-ic", f"wgetcook https://adventofcode.com/2020/day/{day}/input -O {day}.txt"])
