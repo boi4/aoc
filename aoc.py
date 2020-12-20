@@ -8,6 +8,8 @@ import re
 import math
 import subprocess
 from pprint import pprint
+ppritn = pprint
+ppirnt = pprint
 from datetime import datetime
 from copy import deepcopy
 
@@ -550,7 +552,192 @@ def day_19():
 
     print(len([line for line in parts[1].split("\n") if match_rule(line, 0, 0, rules) == len(line)]))
     print(len([line for line in parts[1].split("\n") if len(line) in match_rule2(line, 0, 0, rules2)]))
-    #print(match_rule(parts[1].split("\n")[0], 0, 0))
+
+
+def day_20():
+    tiles = open("20.txt").read().strip().split("\n\n")
+    tiles = {re.match(r'Tile (\d+):', tile.split('\n')[0]).groups()[0]: [list(line) for line in tile.split("\n")[1:]] for tile in tiles}
+
+    num_tiles_borders = round(math.sqrt(len(tiles)))
+    len_tile = len(list(tiles.values())[0])
+
+    def get_borders(tile):
+        a = ["".join(tile[0]), "".join(l[-1] for l in tile), "".join(tile[-1][::-1]), "".join([l[0] for l in tile][::-1])]
+        return a + ["".join(reversed(k)) for k in a]
+
+    def share_border(tile1, tile2):
+        """
+        the first part of result should never be flipped (so < 4)
+        borders are clockwise with 0 at top
+        """
+        borders1 = get_borders(tile1)
+        borders2 = get_borders(tile2)
+        for i,border1 in enumerate(borders1):
+            for j,border2 in enumerate(borders2):
+                if border1 == "".join(reversed(border2)):
+                    return (i,j)
+        return None
+
+    def rotate_counter_clockwise(tile):
+        res = [[' ' for i in range(len(tile))] for j in range(len(tile))]
+        for i in range(len(tile)):
+            for j in range(len(tile)):
+                res[-j-1][i] = tile[i][j]
+        return res
+
+    def flip(tile):
+        res = [[' ' for i in range(len(tile))] for j in range(len(tile))]
+        for i in range(len(tile)):
+            for j in range(len(tile)):
+                res[i][-j-1] = tile[i][j]
+        return res
+    
+
+    ts = list(tiles.items())
+    borders = collections.defaultdict(list)
+    for name1,tile1 in ts:
+        for name2,tile2 in ts:
+            if name1 == name2:
+                continue
+            a = share_border(tile1,tile2)
+            if a is not None:
+                borders[name1].append((name2, a))
+
+    corners = [name for name,l in borders.items() if len(l) == 2]
+
+    pprint(product(int(corner) for corner in corners))
+
+
+    # orient and setup upper left corner
+    upper_left = corners[0]
+    upper_left_borders = borders[upper_left]
+
+    neighbour1 = upper_left_borders[0]
+    neighbour2 = upper_left_borders[1]
+
+    if (neighbour1[1][0] - neighbour2[1][0]) % 4 == 1:
+        neighbour1,neighbour2 = neighbour2,neighbour1
+    
+
+    gridnrs = [[0 for i in range(num_tiles_borders)] for j in range(num_tiles_borders)]
+    gridcontents = [[[[' ' for k in range(len_tile)] for l in range(len_tile)] for i in range(num_tiles_borders)] for j in range(num_tiles_borders)]
+    #print(len(gridcontents), len(gridcontents[0]))
+
+    tt = deepcopy(tiles[upper_left])
+    n_rots = (neighbour1[1][0] - 1) % 4
+
+    for i in range(n_rots):
+        tt = rotate_counter_clockwise(tt) 
+
+    gridnrs[0][0] = upper_left
+    gridcontents[0][0] = tt
+
+    next_nr = neighbour1[0]
+    next_nr_down = neighbour2[0]
+    has_to_flip = neighbour1[1][1] >= 4
+    has_to_flip_down = neighbour2[1][1] >= 4
+
+    for row in range(num_tiles_borders):
+        if row != 0:
+            # setup col 0 of row
+            nr = next_nr_down
+            t = tiles[nr]
+            if has_to_flip_down:
+                t = flip(t)
+            a,b = share_border(t, gridcontents[row-1][0])
+            if b != 2:
+                print("Oh no2 :(")
+            n_rots = a
+            for i in range(n_rots):
+                t = rotate_counter_clockwise(t)
+
+            gridnrs[row][0] = nr
+            gridcontents[row][0] = t
+
+            neighbours = [b[0] for b in borders[nr]]
+            for neighbour in neighbours:
+                t2 = tiles[neighbour]
+                a,b = share_border(t,t2)
+                if a == 2:
+                    next_nr_down = neighbour
+                    has_to_flip_down = b >= 4
+                if a == 1:
+                    next_nr = neighbour
+                    has_to_flip = b >= 4
+
+        # setup rest of row
+        for col in range(1,num_tiles_borders):
+            nr = next_nr
+            t = tiles[nr]
+
+            # flip and rotate tile
+            if has_to_flip:
+                t = flip(t)
+            a,b = share_border(t, gridcontents[row][col-1])
+            if b != 1:
+                print("Oh no :(")
+            n_rots = (a + 1) % 4
+            for i in range(n_rots):
+                t = rotate_counter_clockwise(t)
+
+            gridnrs[row][col] = nr
+            gridcontents[row][col] = t
+
+            # get next tile
+            if col != num_tiles_borders - 1:
+                neighbours = [b[0] for b in borders[nr]]
+                for neighbour in neighbours:
+                    t2 = tiles[neighbour]
+                    a,b = share_border(t,t2)
+                    if a == 1:
+                        next_nr = neighbour
+                        has_to_flip = b >= 4
+
+    # remove joined borders and assemble image
+    stripped = [[[row2[1:-1] for row2 in t[1:-1]] for t in row] for row in gridcontents]
+    picture = [[stripped[row // (len_tile-2)][col][row % (len_tile-2)][col2] for col in range(num_tiles_borders) for col2 in range(len_tile-2)]
+                        for row in range(num_tiles_borders * (len_tile-2))]
+
+
+    monster = """
+                  # 
+#    ##    ##    ###
+ #  #  #  #  #  #   
+"""[1:-1].split('\n')
+    
+    sums = []
+    # each possible combination of rotaions + flip
+    for toflip in (True, False):
+        for n_rots in range(4):
+            # replace monsters with "0"
+            picture2 = deepcopy(picture)
+            for i in range(n_rots):
+                picture2 = rotate_counter_clockwise(picture2)
+            if toflip:
+                picture2 = flip(picture2)
+
+            for row in range(len(picture2)-len(monster)):
+                for col in range(len(picture2[0])-len(monster[0])):
+                    ok = True
+                    for drow in range(len(monster)):
+                        for dcol in range(len(monster[0])):
+                            if monster[drow][dcol] == "#" and picture2[row+drow][col+dcol] != "#":
+                                ok = False
+                    if ok:
+                        # if it's a monster, change tiles to "O" (we don't
+                        # expect overlaps)
+                        for drow in range(len(monster)):
+                            for dcol in range(len(monster[0])):
+                                if monster[drow][dcol] == "#":
+                                    picture2[row+drow][col+dcol] = "O"
+
+            sums.append(("\n".join("".join(row) for row in picture2)).count("#"))
+    print(min(sums))
+
+
+
+
+
 
 
 day = datetime.now().day
