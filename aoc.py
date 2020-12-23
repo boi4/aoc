@@ -605,7 +605,7 @@ def day_20():
 
     corners = [name for name,l in borders.items() if len(l) == 2]
 
-    pprint(product(int(corner) for corner in corners))
+    print(product(int(corner) for corner in corners))
 
 
     # orient and setup upper left corner
@@ -733,6 +733,166 @@ def day_20():
 
             sums.append(("\n".join("".join(row) for row in picture2)).count("#"))
     print(min(sums))
+
+
+
+
+def day_21():
+    lines = [line.strip() for line in open("21.txt")]
+    food_list = []
+    all_allergens = set()
+    all_ingredients = set()
+    for line in lines:
+        a,b = line.split(" (contains ")
+        ingredients = set(a.split())
+        all_ingredients.update(ingredients)
+        allergens = set(b[:-1].split(", "))
+        all_allergens.update(allergens)
+        food_list.append((ingredients,allergens))
+
+    d = collections.defaultdict(lambda :deepcopy(all_ingredients))
+    for allergen in all_allergens:
+        for ings,alls in food_list:
+            if allergen in alls:
+                d[allergen] = d[allergen].intersection(ings)
+
+    impossible_ingredients = [ing for ing in all_ingredients if not any(ing in ings for ings in d.values())]
+    c = 0
+    for a,_ in food_list:
+        for b in a:
+            if b in impossible_ingredients:
+                c+=1
+    print(c)
+
+    final_d = {}
+    while len(d):
+        for k,v in d.items():
+            if len(v) == 1:
+                elem = list(v)[0]
+                final_d[k] = elem
+                del d[k]
+                for k2,v2 in d.items():
+                    if elem in v2:
+                        v2.remove(elem)
+                break
+
+    l = list(final_d.items())
+    l.sort(key=lambda b: b[0])
+    print(",".join(ing for _,ing in l))
+
+
+def day_22():
+    decks = [[int(line) for line in split.split('\n')[1:]] for split in open("22.txt").read().strip().split('\n\n')]
+    #decks = [[int(line) for line in split.split('\n')[1:]] for split in open("a").read().strip().split('\n\n')]
+    decks2 = deepcopy(decks)
+
+    while not any(len(deck) == 0 for deck in decks):
+        p0 = decks[0].pop(0)
+        p1 = decks[1].pop(0)
+        winner = int(p1 > p0)
+        decks[winner] = decks[winner] + [[p0, p1][winner],[p1, p0][winner]]
+
+    winning_deck = decks[winner]
+    #print(winning_deck)
+    #print([(len(winning_deck) - i,card) for i,card in enumerate(winning_deck)])
+    print(sum((len(winning_deck) - i) * card for i,card in enumerate(winning_deck)))
+
+    
+    def recursive_combat(deck0, deck1):
+        deck0,deck1 = deepcopy(deck0),deepcopy(deck1)
+        d = set()
+        while len(deck0) > 0 and len(deck1) > 0:
+            if (tuple(deck0),tuple(deck1)) in d:
+                return 0,None,None
+            else:
+                d.add((tuple(deck0),tuple(deck1)))
+
+                p0 = deck0.pop(0)
+                p1 = deck1.pop(0)
+                if len(deck0) >= p0 and len(deck1) >= p1:
+                    winner,_,_ = recursive_combat(deck0[:p0], deck1[:p1])
+                else:
+                    winner = int(p1 > p0)
+            if winner == 0:
+                deck0 = deck0 + [p0, p1]
+            else:
+                deck1 = deck1 + [p1, p0]
+        return winner,deck0,deck1
+
+    winner,d0,d1 = recursive_combat(decks2[0], decks2[1])
+
+    if winner == 0:
+        winning_deck = d0
+    else:
+        winning_deck = d1
+
+    print(sum((len(winning_deck) - i) * card for i,card in enumerate(winning_deck)))
+
+
+def day_23():
+    cups = [int(c) for c in open("23.txt").read().strip()]
+    cups2 = deepcopy(cups)
+
+    num_cups = len(cups)
+    max_cup = max(cups)
+
+    current_index = 0
+    for i in range(100):
+        current_cup = cups[current_index]
+        #print(cups, current_cup)
+        to_the_side = []
+        for j in range(3):
+            if  current_index + 1 >= len(cups):
+                to_the_side.append(cups.pop(0))
+            else:
+                to_the_side.append(cups.pop((current_index + 1) % len(cups)))
+        n = (current_cup - 1) % (max_cup + 1)
+        l = -1
+        while True:
+            if n in cups:
+                l = cups.index(n)
+                break
+            n = (n - 1) % (max_cup + 1)
+        #print(to_the_side, n)
+        for j in range(3):
+            cups.insert(l+1, to_the_side.pop())
+
+        current_index = (cups.index(current_cup) + 1) % len(cups)
+
+    i = cups.index(1)
+    print("".join(str(c) for c in cups[i+1:]) + "".join(str(c) for c in cups[:i]))
+
+
+    cups = cups2
+    current_cup = cups[0]
+    print(cups)
+
+    for i in range(10000000):
+        to_the_side = []
+        for j in range(3):
+            if cups.index(current_cup) + 1 == len(cups):
+                to_the_side.append(max((max(cups),max(to_the_side))))
+            else:
+                to_the_side.append(cups.pop(cups.index(current_cup) + 1))
+
+        l = -1
+        n = current_cup - 1
+        while n > 0:
+            if n in cups:
+                l = cups.index(n)
+                break
+            n = n - 1
+        #print(n)
+        if n == 0:
+            for j in range(3):
+                cups.append(to_the_side.pop(0))
+        else:
+            for j in range(3):
+                cups.insert(l+1, to_the_side.pop())
+
+        if i % 100000 == 0:
+            print(i, len(cups))
+    print(cups)
 
 
 
