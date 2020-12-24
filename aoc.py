@@ -863,38 +863,72 @@ def day_23():
     print("".join(str(c) for c in cups[i+1:]) + "".join(str(c) for c in cups[:i]))
 
 
-    cups = cups2
-    current_cup = cups[0]
-    print(cups)
 
-    for i in range(10000000):
-        to_the_side = []
-        for j in range(3):
-            if cups.index(current_cup) + 1 == len(cups):
-                to_the_side.append(max((max(cups),max(to_the_side))))
+def day_24():
+    lines = [line.strip() for line in open("24.txt") if line.split()]
+    tiles = []
+    for line in lines:
+        directions = []
+        while line:
+            if line.startswith('n') or line.startswith('s'):
+                directions.append(line[:2])
+                line = line[2:]
             else:
-                to_the_side.append(cups.pop(cups.index(current_cup) + 1))
-
-        l = -1
-        n = current_cup - 1
-        while n > 0:
-            if n in cups:
-                l = cups.index(n)
-                break
-            n = n - 1
-        #print(n)
-        if n == 0:
-            for j in range(3):
-                cups.append(to_the_side.pop(0))
-        else:
-            for j in range(3):
-                cups.insert(l+1, to_the_side.pop())
-
-        if i % 100000 == 0:
-            print(i, len(cups))
-    print(cups)
+                directions.append(line[:1])
+                line = line[1:]
+        tiles.append(directions)
 
 
+    simplified = collections.defaultdict(int)
+
+    for directions in tiles:
+        d = collections.defaultdict(int)
+        for direction in directions:
+            if direction[-1] == 'e':
+                d[direction] += 1
+            else:
+                if direction == 'w':
+                    d['e'] -= 1
+                else:
+                    d[['ne', 'se'][['sw', 'nw'].index(direction)]] -= 1
+
+        d2 = collections.defaultdict(int)
+        d2['e'] = d['e']
+        d2['ne'] = d['ne']
+        d2['e'] += d['se']
+        d2['ne'] -= d['se']
+
+        simplified[(d2['e'],d2['ne'])] += 1
+
+    print(len([1 for v in simplified.values() if v % 2 == 1]))
+
+    # part 2
+    def round(tiles):
+        diffs = [(1,0),(1,-1),(0,-1),(-1,0),(-1,1),(0,1)]
+                #  e     se     sw     w      nw     ne
+        tocheck = set()
+        for e,ne in tiles:
+            for de,dne in diffs:
+                tocheck.add((e+de,ne+dne))
+            tocheck.add((e,ne))
+
+        res = set()
+        for e,ne in tocheck:
+            neigh = 0
+            for de,dne in diffs:
+                if (e+de,ne+dne) in tiles:
+                    neigh += 1
+            if (e,ne) in tiles and 1 <= neigh <= 2:
+                res.add((e,ne))
+            if (e,ne) not in tiles and neigh == 2:
+                res.add((e,ne))
+        return res
+
+    tiles = set(k for k,v in simplified.items() if v % 2 == 1)
+
+    for i in range(100):
+        tiles = round(tiles)
+        print(len(tiles))
 
 
 
