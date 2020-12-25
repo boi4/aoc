@@ -931,6 +931,25 @@ def day_24():
         print(len(tiles))
 
 
+def day_25():
+    lines = [line.strip() for line in open("25.txt") if line.split()]
+    a_pub = int(lines[0])
+    b_pub = int(lines[1])
+
+    # diffie hellman
+    m = 20201227 # is prime
+    g = 7
+
+    def brute(pub):
+        i = 0
+        while True:
+            if pow(g,i,m) == pub:
+                return i
+            i += 1
+
+    a = brute(a_pub)
+    key = pow(b_pub,a,m)
+    print(key)
 
 
 
