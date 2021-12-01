@@ -1,0 +1,9 @@
+     1                                  BITS 64
+     2                                  
+     3                                  SECTION .TEXT
+     4                                  
+     5                                  GLOBAL _start
+     6                                  _start:
+     7 00000000 BF00000000              	mov rdi, 0
+     8 00000005 B83C000000              	mov rax, 60
+     9 0000000A 0F05                    	syscall
