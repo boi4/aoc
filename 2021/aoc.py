@@ -3,16 +3,27 @@ import os
 import re
 import sqlite3
 import sys
-from shutil import copyfile
+from functools import reduce
 from datetime import datetime
+from shutil import copyfile
 
 import requests
 
 
 def day_1(input):
     k = [int(l) for l in input.split('\n') if l]
-    k = [sum(l) for l in zip(k[:-2],k[1:-1],k[2:])] # uncomment for silver star
+    k = [sum(l) for l in zip(k[:-2],k[1:-1],k[2:])] # comment for silver star
     return sum(b > a for a,b in zip(k[:-1],k[1:]))
+
+def day_2(input):
+    #l = [({"f":1,"d":0,"u":0}[line[0]]*int(line.split()[1]),{"f":0,"d":1,"u":-1}[line[0]]*int(line.split()[1])) for line in input.splitlines()]
+    #return [sum(x) for x in zip(*l)][0] * [sum(x) for x in zip(*l)][1]
+    a,b,_ = reduce(lambda acc,line: (acc[0] + int(line.split()[1])*(line[0]=="f"),
+                                     acc[1] + int(line.split()[1])*(line[0]=="f")*acc[2],
+                                     acc[2] + int(line.split()[1])*(["u","f","d"].index(line[0])-1)),
+                   input.splitlines(),
+                   (0,0,0))
+    return a * b
 
 
 
@@ -113,6 +124,7 @@ def submit_solution(session, day, level, answer):
         print("\033[38;5;2m", end="") # green
         print(f"> {result}")
         print("\033[0;0m", end="") # reset color to normal
+        return True
     else:
         print(result)
         return False
@@ -133,12 +145,13 @@ def solve(day):
 
     with open(fname) as f:
         answer = globals()[f"day_{day}"](f.read())
-        print("Trying level 1")
-        ok = submit_solution(s, day, 1, answer)
-        if not ok:
-            print()
-            print("Trying level 2")
-            submit_solution(s, day, 2, answer)
+        if answer is not None:
+            print("Trying level 1")
+            ok = submit_solution(s, day, 1, answer)
+            if not ok:
+                print()
+                print("Trying level 2")
+                submit_solution(s, day, 2, answer)
 
 
 def main():
