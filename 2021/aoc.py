@@ -16,6 +16,7 @@ def day_1(input):
     k = [sum(l) for l in zip(k[:-2],k[1:-1],k[2:])] # comment for silver star
     return sum(b > a for a,b in zip(k[:-1],k[1:]))
 
+
 def day_2(input):
     #l = [({"f":1,"d":0,"u":0}[line[0]]*int(line.split()[1]),{"f":0,"d":1,"u":-1}[line[0]]*int(line.split()[1])) for line in input.splitlines()]
     #return [sum(x) for x in zip(*l)][0] * [sum(x) for x in zip(*l)][1]
@@ -25,6 +26,7 @@ def day_2(input):
                    input.splitlines(),
                    (0,0,0))
     return a * b
+
 
 def day_3(input):
     #m = list(zip(*[[int(c) for c in line] for line in input.splitlines()]))
@@ -48,6 +50,29 @@ def day_3(input):
     return co2 * ox
     #return a * (((1<<len(m))-1) ^ a)
 
+
+def day_4(input):
+    blocks = [block for block in input.split('\n\n') if block.strip()]
+    drawings = [int(k) for k in blocks[0].split(",")]
+    blocks = [[[int(l) for l in line.split()]for line in block.splitlines()] for block in blocks[1:]]
+    drawn = []
+#    for drawing in drawings:
+#        drawn.append(drawing)
+#        for block in blocks:
+#            for row in block+list(zip(*block)):
+#                if all(num in drawn for num in row):
+#                    s = sum(num for r in block for num in r if num not in drawn)
+#                    return  s * drawing
+    blocksdone = [False]*len(blocks)
+    for drawing in drawings:
+        drawn.append(drawing)
+        for i,block in enumerate(blocks):
+            for row in block+list(zip(*block)):
+                if all(num in drawn for num in row):
+                    blocksdone[i] = True
+                    if all(blocksdone):
+                        s = sum(num for r in block for num in r if num not in drawn)
+                        return  s * drawing
 
 
 def get_session_cookie():
