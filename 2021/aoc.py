@@ -3,6 +3,7 @@ import os
 import re
 import sqlite3
 import sys
+from copy import deepcopy
 from functools import reduce
 from datetime import datetime
 from shutil import copyfile
@@ -25,6 +26,27 @@ def day_2(input):
                    (0,0,0))
     return a * b
 
+def day_3(input):
+    #m = list(zip(*[[int(c) for c in line] for line in input.splitlines()]))
+    #a = int("".join([str(int(sum(k) > len(k)/2)) for k in m]),2)
+    #return a * (((1<<len(m))-1) ^ a)
+    m = [[int(c) for c in line] for line in input.splitlines()]
+    toconsider = deepcopy(m)
+    bitpos = 0
+    while len(toconsider) > 1:
+        b = int(sum([l[bitpos] for l in toconsider])>=len(toconsider)/2)
+        toconsider = [l for l in toconsider if l[bitpos] == b]
+        bitpos += 1
+    ox = int("".join(str(c) for c in toconsider[0]),2)
+    toconsider = deepcopy(m)
+    bitpos = 0
+    while len(toconsider) > 1:
+        b = int(sum([l[bitpos] for l in toconsider])>=len(toconsider)/2)
+        toconsider = [l for l in toconsider if l[bitpos] != b]
+        bitpos += 1
+    co2 = int("".join(str(c) for c in toconsider[0]),2)
+    return co2 * ox
+    #return a * (((1<<len(m))-1) ^ a)
 
 
 
@@ -54,7 +76,7 @@ WHERE host='.adventofcode.com' AND name='session';
 
 def submit_solution(session, day, level, answer):
     """
-    return True if this solves the solution for first time
+    return True if this solves the problem for first time
     """
     data = {"level": level, "answer": answer}
     url = f"https://adventofcode.com/2021/day/{day}/answer"
