@@ -12,7 +12,7 @@ import requests
 
 
 def day_1(input):
-    k = [int(l) for l in input.split('\n') if l]
+    k = [int(l) for l in input.splitlines()]
     k = [sum(l) for l in zip(k[:-2],k[1:-1],k[2:])] # comment for silver star
     return sum(b > a for a,b in zip(k[:-1],k[1:]))
 
@@ -73,6 +73,37 @@ def day_4(input):
                     if all(blocksdone):
                         s = sum(num for r in block for num in r if num not in drawn)
                         return  s * drawing
+
+
+def day_5(input):
+    from collections import Counter
+    l = [[(int(p.split(",")[0]),int(p.split(",")[1])) for p in l.split(" -> ")] for l in input.splitlines()]
+    print(l)
+    min_x = min(p[0] for a in l for p in a)
+    max_x = max(p[0] for a in l for p in a)
+    min_y = min(p[1] for a in l for p in a)
+    max_y = max(p[1] for a in l for p in a)
+    d = 0
+    for y in range(min_y, max_y + 1):
+        for x in range(min_x, max_x + 1):
+            c = 0
+            for p1,p2 in l:
+                if p1[0] == p2[0] or p1[1] == p2[1]:
+                    if p1[0] <= x <= p2[0] and p1[1] <= y <= p2[1]:
+                        c += 1
+            print(c, end=" ")
+            if c > 1:
+                d += 1
+        print("")
+    print(d)
+
+def day_8(input):
+    pass
+    return 8
+
+    #c = Counter([(x,y) for (p1,p2) in l for x in range(p1[0],p2[0]+1) for y in range(p1[1],p2[1]+1)])
+    #print(c)
+    #print(len([1 for v in c.values() if v>1]))
 
 
 def get_session_cookie():
