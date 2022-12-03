@@ -21,6 +21,23 @@ def day_1(input):
     #return max(elves_sums)
 
 
+def day_2(input):
+    games = [line.split() for line in input.split("\n") if line.strip()]
+    f = lambda g: [6,3,0][(1 + "ABC".index(g[0])-"XYZ".index(g[1]))%3] \
+            + 1+"XYZ".index(g[1])
+    games = [(g[0],"XYZ"[("ABC".index(g[0]) + "XYZ".index(g[1]) - 1)%3]) for g in games]
+    return sum([f(g) for g in games])
+
+
+def day_3(input):
+#    lines = [(line[:len(line)//2],line[len(line)//2:])
+#             for line in input.split("\n") if line.strip()]
+#    parts = [list(set(a).intersection(set(b)))[0] for (a,b) in lines]
+    lines = [line for line in input.split("\n") if line.strip()]
+    lines = [(lines[3*i],lines[3*i+1],lines[3*i+2]) for i in range(len(lines)//3)]
+    parts = [list(set(a).intersection(set(b)).intersection(set(c)))[0] for (a,b,c) in lines]
+    return sum(" abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".index(p) for p in parts)
+
 
 def get_session_cookie():
     ffpath = os.path.expanduser("~/.mozilla/firefox")
