@@ -39,6 +39,18 @@ def day_3(input):
     return sum(" abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".index(p) for p in parts)
 
 
+def day_4(input):
+    lines = [[[int(a) for a in k.split("-")] for k in l.split(",")]
+             for l in input.strip().split("\n")]
+    #return sum((a[0] <= b[0] and b[1] <= a[1])
+    #            or (b[0] <= a[0] and a[1] <= b[1])
+    #           for (a,b) in lines)
+    return sum((a[0] <= b[0] and a[1] >= b[0])
+                or (a[0] >= b[0] and a[0] <= b[1])
+               for (a,b) in lines)
+
+
+
 def get_session_cookie():
     ffpath = os.path.expanduser("~/.mozilla/firefox")
     base,subs,_ = next(os.walk(ffpath))
