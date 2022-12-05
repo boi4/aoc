@@ -50,6 +50,17 @@ def day_4(input):
                for (a,b) in lines)
 
 
+def day_5(input):
+    stacks, commands = input.strip().split("\n\n")
+    rows = reversed([l[1::4] for l in stacks.split("\n")[:-1]])
+    stacks = list(map(lambda x: "".join(x).strip(), zip(*rows)))
+    for h,f,t in re.findall(r"move (\d+) from (\d+) to (\d+)", commands):
+        #stacks[int(t)-1] += "".join(reversed(stacks[int(f)-1][-int(h):]))
+        stacks[int(t)-1] += "".join(stacks[int(f)-1][-int(h):])
+        stacks[int(f)-1] = stacks[int(f)-1][:-int(h)]
+    return "".join(s[-1] for s in stacks)
+
+
 
 def get_session_cookie():
     ffpath = os.path.expanduser("~/.mozilla/firefox")
