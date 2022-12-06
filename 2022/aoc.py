@@ -61,6 +61,13 @@ def day_5(input):
     return "".join(s[-1] for s in stacks)
 
 
+def day_6(input):
+    input = input.strip()
+    N = 14
+    a = [i+N for i in range(len(input)-N) if len(set(input[i:i+N])) == N]
+    return a[0]
+    #return a[0]
+
 
 def get_session_cookie():
     ffpath = os.path.expanduser("~/.mozilla/firefox")
