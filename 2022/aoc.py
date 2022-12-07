@@ -69,6 +69,54 @@ def day_6(input):
     #return a[0]
 
 
+def day_7(input):
+    cmds = [(l.split("\n")[0],"\n".join(l.split("\n")[1:]))
+     for l in input.strip().split("$ ")[1:]]
+
+    # build file system tree
+    pwd = []
+    fs = {}
+    for cmd,output in cmds:
+        match cmd.split():
+            case ("cd", "/"):
+                pwd = []
+            case ("cd", ".."):
+                pwd.pop(-1)
+            case ("cd", dir):
+                pwd.append(dir)
+            case ("ls",):
+                d = fs
+                for k in pwd:
+                    d = d[k]
+                for a,b in [l.split() for l in output.split("\n") if l]:
+                    if a == "dir" and b not in d:
+                        d[b] = {}
+                    else:
+                        d[b] = int(a)
+            case _:
+                print(f"Invalid cmd {cmd}")
+                return
+
+    def dir_size(d, path, sizes):
+        print(d,path)
+        s = 0
+        for k,v in d.items():
+            if isinstance(v, dict):
+                s += dir_size(v, path + [k], sizes)
+            else:
+                s += v
+        sizes[tuple(path)] = s
+        return s
+
+    sizes = {}
+    s = dir_size(fs, [], sizes)
+    #return sum(v for v in sizes.values() if v <= 100000)
+    free_space = 70000000 - s
+    space_needed = 30000000 - free_space
+    return min(v for v in sizes.values() if v >= space_needed)
+
+
+
 def get_session_cookie():
     ffpath = os.path.expanduser("~/.mozilla/firefox")
     base,subs,_ = next(os.walk(ffpath))
