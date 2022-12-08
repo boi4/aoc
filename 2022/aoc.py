@@ -9,7 +9,11 @@ from datetime import datetime
 from shutil import copyfile
 
 import requests
+import numpy as np
 
+
+def product(it):
+    return reduce(lambda acc,x: acc * x, it, 1)
 
 
 def day_1(input):
@@ -116,6 +120,29 @@ def day_7(input):
     return min(v for v in sizes.values() if v >= space_needed)
 
 
+def day_8(input):
+    treemap = np.array([[int(a) for a in l] for l in input.strip().split("\n")])
+    masks = []
+    for tm in [treemap, treemap.T, treemap[::-1], treemap.T[::-1]]:
+        highest = np.maximum.accumulate(tm, axis=0)
+        higher = np.diff(highest, prepend=-1, axis=0) > 0
+        masks.append(higher)
+
+    is_visible = np.logical_or(masks[0], masks[1].T)
+    is_visible = np.logical_or(is_visible, masks[2][::-1])
+    is_visible = np.logical_or(is_visible, masks[3][::-1].T)
+    #return np.sum(is_visible) # solve 1
+
+    ms = 0
+    for idx,v in np.ndenumerate(treemap):
+        i,j = idx
+        tocheck = [treemap[:i,j][::-1],treemap[i,:j][::-1],treemap[i,j+1:],treemap[i+1:,j]]
+        score = product(len(tc) if np.all((tc-v)<0) else np.argmax((tc-v)>=0) + 1 for tc in tocheck)
+        if score > ms: ms = score
+    return ms
+
+
+
 
 def get_session_cookie():
     ffpath = os.path.expanduser("~/.mozilla/firefox")
@@ -171,6 +198,7 @@ def submit_solution(session, day, level, answer):
     data = {"level": level, "answer": answer}
     url = f"https://adventofcode.com/2022/day/{day}/answer"
 
+    print("Answer:", answer)
     print(f"Submitting solution for day {day}, level {level}...")
     print()
     r = session.post(url, data=data)
