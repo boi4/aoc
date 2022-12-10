@@ -141,7 +141,32 @@ def day_8(input):
         if score > ms: ms = score
     return ms
 
+def day_9(input):
+    #T_pos, H_pos = np.array([0,0]),np.array([0,0])
+    #visited = set(((0,0),))
+    #for d,s in [(l.split()[0],int(l.split()[1])) for l in input.strip().split("\n")]:
+    #    for i in range(s):
+    #        H_pos += np.array([[1,0,-1, 0],
+    #                             [0,1, 0,-1],])[:,"URDL".index(d)]
+    #        if np.max(np.abs(H_pos-T_pos)) == 2:
+    #            T_dir = (H_pos-T_pos) / 2
+    #            T_pos += np.int64(np.where(T_dir < 0, np.floor(T_dir), np.ceil(T_dir)))
+    #        visited.add(tuple(T_pos))
+    #return len(visited)
 
+    positions = [np.array([0,0]) for _ in range(10)]
+    visited = set(((0,0),))
+    for d,s in [(l.split()[0],int(l.split()[1])) for l in input.strip().split("\n")]:
+        for i in range(s):
+            positions[0] += np.array([[1,0,-1, 0],
+                                      [0,1, 0,-1],])[:,"URDL".index(d)]
+            for i in range(1,len(positions)):
+                prev, next = positions[i-1],positions[i]
+                if np.max(np.abs(prev-next)) == 2:
+                    T_dir = (prev-next) / 2
+                    positions[i] += np.int64(np.where(T_dir < 0, np.floor(T_dir), np.ceil(T_dir)))
+            visited.add(tuple(positions[-1]))
+    return len(visited)
 
 
 def get_session_cookie():
@@ -277,5 +302,6 @@ def main():
         print("Advent has ended you fool 🎅")
 
 if __name__ == "__main__":
-    main()
+    #main()
+    solve(9)
 
