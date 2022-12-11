@@ -141,6 +141,7 @@ def day_8(input):
         if score > ms: ms = score
     return ms
 
+
 def day_9(input):
     #T_pos, H_pos = np.array([0,0]),np.array([0,0])
     #visited = set(((0,0),))
@@ -167,6 +168,14 @@ def day_9(input):
                     positions[i] += np.int64(np.where(T_dir < 0, np.floor(T_dir), np.ceil(T_dir)))
             visited.add(tuple(positions[-1]))
     return len(visited)
+
+
+def day_10(input):
+    orig = np.array([0 if l == "noop" else int(l[5:]) for l in 
+    ("noop\n" + input.strip()).replace("addx","noop\naddx").split("\n")])
+    a = 1 + np.cumsum(orig)
+    b = a * np.arange(1,a.shape[-1]+1)
+    return sum(b[19::40])
 
 
 def get_session_cookie():
@@ -302,6 +311,5 @@ def main():
         print("Advent has ended you fool 🎅")
 
 if __name__ == "__main__":
-    #main()
-    solve(9)
+    main()
 
