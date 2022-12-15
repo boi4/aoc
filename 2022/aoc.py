@@ -175,7 +175,18 @@ def day_10(input):
     ("noop\n" + input.strip()).replace("addx","noop\naddx").split("\n")])
     a = 1 + np.cumsum(orig)
     b = a * np.arange(1,a.shape[-1]+1)
-    return sum(b[19::40])
+    #return sum(b[19::40])
+    display = np.zeros(shape=(6,40), dtype=bool)
+    for row in range(6):
+        for col in range(40):
+            spritepos = a[row*40+col]
+            if col in [spritepos-1,spritepos,spritepos+1]:
+                display[row,col] = True
+                print("#",end="")
+            else:
+                print(" ",end="")
+        print()
+    return "RBPARAGF" # hardcoded
 
 
 def get_session_cookie():
@@ -311,5 +322,6 @@ def main():
         print("Advent has ended you fool 🎅")
 
 if __name__ == "__main__":
-    main()
+    #main()
+    solve(10)
 
