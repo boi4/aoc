@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import functools
 import os
 import re
 import sqlite3
@@ -310,6 +311,79 @@ def day_12(input):
     return min([len(walk) - 1 for walk in walks])
 
 
+def day_13(input):
+    pairs = input.strip().split("\n\n")
+
+    def mysplit(line, tok):
+        lvl = 0
+        parts = []
+        i = 0
+        part = ""
+        while i < len(line):
+            if lvl == 0 and line[i:].startswith(tok):
+                parts.append(part)
+                part = ""
+                i += len(tok)
+            else:
+                c = line[i]
+                if c == "[":
+                    lvl += 1
+                elif c == "]":
+                    lvl -= 1
+                part += c
+                i += 1
+        parts.append(part)
+        return parts
+
+    def parse(line):
+        res = []
+        if line[1:-1] == "":
+            return res
+        for tok in mysplit(line[1:-1], ","):
+            res.append(parse(tok) if tok[0] == "[]"[0] else int(tok)) # [] bc pyright bug
+        return res
+
+    def compare(l,r):
+        if type(l) == type(r) == type([]):
+            l = l.copy()
+            r = r.copy()
+            while True:
+                if len(l) == len(r) == 0:
+                    return 0
+                if len(l) == 0:
+                    return 1
+                if len(r) == 0:
+                    return -1
+                litem = l.pop(0)
+                ritem = r.pop(0)
+                c = compare(litem,ritem)
+                if c != 0:
+                    return c
+        if type(l) == type(r) == type(1):
+            if l == r: return 0
+            if l < r: return 1
+            if l > r: return -1
+        if type(l) == type([]) and type(r) == type(1):
+            return compare(l,[r])
+        if type(r) == type([]) and type(l) == type(1):
+            return compare([l],r)
+
+
+    #indices = []
+    #for i,pair in enumerate(pairs):
+    #    left,right = pair.split("\n")
+    #    left,right = parse(left),parse(right)
+    #    if compare(left,right) == 1:
+    #        indices.append(i+1)
+    #return sum(indices)
+    lines = [parse(line) for pair in pairs for line in pair.split("\n")]
+    lines.append(parse("[[2]]"))
+    lines.append(parse("[[6]]"))
+    lines.sort(key=functools.cmp_to_key(compare), reverse=True)
+    lines = [str(l) for l in lines]
+    return (lines.index("[[2]]") + 1) * (lines.index("[[6]]") + 1)
+
+
 
 def get_session_cookie():
     ffpath = os.path.expanduser("~/.mozilla/firefox")
@@ -445,5 +519,5 @@ def main():
 
 if __name__ == "__main__":
     #main()
-    solve(12)
+    solve(13)
 
