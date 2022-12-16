@@ -189,6 +189,128 @@ def day_10(input):
     return "RBPARAGF" # hardcoded
 
 
+def day_11(input):
+    start_pattern = r"Starting items: (.*)$"
+    items = [[int(b) for b in l.split(",")]
+                   for l in re.findall(start_pattern, input, re.MULTILINE)]
+    operation_pattern = r"Operation: new = old ([+*]) (\d+|old)$"
+    operations = re.findall(operation_pattern, input, re.MULTILINE)
+    test_pattern = r"""Test: divisible by (\d+)
+\s+If true: throw to monkey (\d+)
+\s+If false: throw to monkey (\d+)
+"""
+    tests = [(int(a),int(b),int(c)) for (a,b,c) in re.findall(test_pattern, input, re.MULTILINE)]
+
+
+    task1 = False
+    modulus = product(a[0] for a in tests)
+    num_inspected = [0] * len(items)
+    for round in range(20 if task1 else 10000):
+        #print(f"Round {round}\n==================")
+        for monkey in range(len(items)):
+            #print(f"Monkey {monkey}:")
+            op,num = operations[monkey]
+            divisor,truemonkey,falsemonkey = tests[monkey]
+            for item in items[monkey]:
+                #print(f"  Monkey inspects an item with a worry level of {item}")
+                # inspect item
+                if num == "old":
+                    arg = item
+                else:
+                    arg = int(num)
+                if op == "*":
+                    item *= arg
+                else:
+                    item += arg
+
+                # get bored of item
+                if task1:
+                    item //= 3
+                else:
+                    item = item % modulus
+                #print(f"  Now it's {item}")
+
+                # check where to throw item
+                if item % divisor == 0:
+                    items[truemonkey].append(item)
+                else:
+                    items[falsemonkey].append(item)
+                num_inspected[monkey] += 1 
+            items[monkey] = []
+        #from pprint import pprint
+        #pprint(items)
+    #print(num_inspected)
+    return product(sorted(num_inspected, reverse=True)[:2])
+
+
+def day_12(input):
+    heightmap = np.array([[ord(c) for c in line] for line in input.strip().split("\n")])
+
+    rx,cx = np.where(heightmap == ord('S'))
+    heightmap[rx,cx] = ord('a')
+    start = (rx[0],cx[0])
+
+    rx,cx = np.where(heightmap == ord('E'))
+    heightmap[rx,cx] = ord('z')
+    end = (rx[0],cx[0])
+
+    heightmap -= ord('a')
+    maxint = np.iinfo(np.int64).max
+    costgrid = np.ones(shape=heightmap.shape, dtype=np.int64) * maxint
+
+    def get_neighbors(row,col):
+        return list(zip(*[(row+dr,col+dc) for (dr,dc) in [(-1,0),(1,0),(0,-1),(0,1)]
+                          if 0 <= (row+dr) < costgrid.shape[0] and 0 <= (col+dc) < costgrid.shape[1]
+                             and heightmap[row,col] >= heightmap[row+dr,col+dc] - 1]))
+
+
+    # create dijkstra costgrid, can be obviously made more efficient by spiraling around end
+    costgrid[end[0],end[1]] = 0
+    for _ in range(product(costgrid.shape)):
+        for row in range(costgrid.shape[0]):
+            for col in range(costgrid.shape[1]):
+                neighbors = get_neighbors(row,col)
+                if len(neighbors):
+                    vals = costgrid[neighbors[0],neighbors[1]]
+                    mval = min(vals)
+                    if mval < maxint and mval < costgrid[row,col]:
+                        costgrid[row,col] = mval + 1
+
+    def walk(pos):
+        history = [pos]
+        while pos != end:
+            all_neighbors = get_neighbors(*pos)
+            if len(all_neighbors) == 0:
+                return None
+            neighbors = [[],[]]
+            for i in range(len(all_neighbors[0])):
+                n = (all_neighbors[0][i],all_neighbors[1][i])
+                if n not in history:
+                    neighbors[0].append(n[0])
+                    neighbors[1].append(n[1])
+            if len(neighbors[0]) == 0:
+                return None
+            costs = costgrid[neighbors[0],neighbors[1]]
+            i = np.argmin(costs)
+            if costs[i] > costgrid[pos[0],pos[1]]:
+                return None
+            pos = (neighbors[0][i],neighbors[1][i])
+            history.append(pos)
+        return history
+    
+
+    #return len(walk(start)) - 1
+
+    positions = [(row,col) for row in range(costgrid.shape[0]) for col in range(costgrid.shape[1]) if heightmap[row,col] == 0]
+    walks = []
+    for pos in positions:
+        w = walk(pos)
+        if w is not None:
+            walks.append(walk(pos))
+    return min([len(walk) - 1 for walk in walks])
+
+
+
 def get_session_cookie():
     ffpath = os.path.expanduser("~/.mozilla/firefox")
     base,subs,_ = next(os.walk(ffpath))
@@ -323,5 +445,5 @@ def main():
 
 if __name__ == "__main__":
     #main()
-    solve(10)
+    solve(12)
 
