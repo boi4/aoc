@@ -384,6 +384,87 @@ def day_13(input):
     return (lines.index("[[2]]") + 1) * (lines.index("[[6]]") + 1)
 
 
+def day_14(input):
+    task1 = False
+    structures = [[(int(a.split(",")[0]),int(a.split(",")[1])) for a in l.split(" -> ")]
+                  for l in input.strip().split("\n")]
+
+
+    # turn structures into list of blocked coordinates
+    structures_np = []
+    for s in structures:
+        for a,b in zip(s[:-1],s[1:]):
+            if a > b:
+                a,b = b,a
+            if a[0] == b[0]:
+                l = np.stack((
+                        np.arange(a[1],b[1]+1),
+                        np.ones((b[1]-a[1]+1,),dtype=np.int64) * a[0],
+                 ))
+            else:
+                l = np.stack((
+                        np.ones((b[0]-a[0]+1,),dtype=np.int64) * a[1],
+                        np.arange(a[0],b[0]+1),
+                ))
+            structures_np.append(l)
+    blocks = np.concatenate(structures_np, axis=1)
+
+    sand = np.array([0,500])
+    if task1:
+        # set make origin to 0,0
+        dx = np.min(blocks[1])
+        blocks[1] -= dx
+        sand[1] -= dx
+
+        # determine cave dimensions
+        height = np.max(blocks[0]) + 1
+        width  = np.max(blocks[1]) + 1
+
+        cave = np.zeros(shape=(height,width), dtype=np.int64)
+        cave[blocks[0],blocks[1]] = 1
+    else:
+        height = np.max(blocks[0]) + 1 + 2
+
+        # make enough space for floor
+        dx = np.min(blocks[1]) - height
+        blocks[1] -= dx
+        sand[1] -= dx
+
+        width  = np.max(blocks[1]) + 1 + height
+        cave = np.zeros(shape=(height,width), dtype=np.int64)
+
+        cave[blocks[0],blocks[1]] = 1
+
+        # add floor
+        cave[-1] = 1
+
+    cnt = 0
+    pos = sand.copy()
+    while True:
+        if pos[0] + 1 >= height:
+            break
+        elif cave[pos[0]+1,pos[1]] == 0:
+            pos[0] += 1
+        elif pos[1] - 1 < 0:
+            break
+        elif cave[pos[0]+1,pos[1]-1] == 0:
+            pos += np.array((1,-1))
+        elif pos[1] + 1  >= width:
+            break
+        elif cave[pos[0]+1,pos[1]+1] == 0:
+            pos += np.array((1,1))
+        elif np.all(pos == sand): # task 2, blocking start
+            cnt += 1
+            break
+        else: # bottom of cave
+            cnt += 1
+            cave[pos[0],pos[1]] = 2
+            pos = sand.copy()
+    return cnt
+
+
+
+
 
 def get_session_cookie():
     ffpath = os.path.expanduser("~/.mozilla/firefox")
@@ -519,5 +600,5 @@ def main():
 
 if __name__ == "__main__":
     #main()
-    solve(13)
+    solve(14)
 
