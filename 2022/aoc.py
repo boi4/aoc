@@ -463,6 +463,46 @@ def day_14(input):
     return cnt
 
 
+def day_15(input):
+    l = re.findall(r"Sensor at x=([-\d]+), y=([-\d]+): closest beacon is at x=([-\d]+), y=([-\d]+)$", input, re.MULTILINE)
+    sensor_data = np.array([[int(a) for a in b] for b in l]).T
+    distances = np.abs(sensor_data[:2]-sensor_data[2:]).sum(axis=0)
+
+
+    # task 1
+    y = 2000000
+    undetected_ranges = set()
+    for i in range(sensor_data.shape[-1]):
+        distance = distances[i]
+        x = sensor_data[0,i]
+        xdistance = distance - np.abs(sensor_data[1,i] - y)
+        if xdistance < 0:
+            continue
+        undetected_ranges |= set(range(x-xdistance, x+xdistance+1))
+    for i in range(sensor_data.shape[-1]):
+        if sensor_data[3,i] == y and sensor_data[2,i] in undetected_ranges:
+            undetected_ranges.remove(sensor_data[2,i])
+    #return len(undetected_ranges)
+
+
+    # task 2
+    # walk along edges
+    for i in range(len(distances)):
+        distance = distances[i]
+        sensor_x = sensor_data[0,i]
+        sensor_y = sensor_data[1,i]
+
+        xvals = np.arange(sensor_x - distance - 1, sensor_x + distance + 2)
+        xvals = np.concatenate((xvals, xvals[-2:0:-1]))
+
+        yvals = np.arange(sensor_y - distance - 1, sensor_y + distance + 2)
+        ly = len(yvals)
+        yvals = np.concatenate((yvals[ly//2:], yvals[-2:0:-1], yvals[:ly//2]))
+        for x,y in zip(xvals,yvals):
+            if not (0 <= x < 4000000 and 0 <= y < 4000000): continue
+            check = distances - (np.abs(sensor_data[1] - y) + np.abs(sensor_data[0] - x))
+            if np.all(check < 0): return 4000000*x + y
+
 
 
 
@@ -600,5 +640,5 @@ def main():
 
 if __name__ == "__main__":
     #main()
-    solve(14)
+    solve(15)
 
