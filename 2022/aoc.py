@@ -592,6 +592,163 @@ def day_16(input):
     return max_seen
 
 
+def day_17(input):
+    # setup shapes
+    shapes = """
+####
+
+.#.
+###
+.#.
+
+..#
+..#
+###
+
+#
+#
+#
+#
+
+##
+##
+""".strip().split("\n\n")
+    shapes = [np.array([[".#".index(c) for c in line] for line in reversed(shape.split("\n"))]) for shape in shapes]
+
+
+    # setup wind
+    wind_directions = input.strip()
+
+    # setup chamber
+    num_rocks = 1000000000000
+    max_shape_height = max(s.shape[0] for s in shapes)
+    chamber_width = 7
+    #chamber_height = num_rocks * max_shape_height
+    chamber_height = 10000 * max_shape_height
+
+    chamber = np.zeros(shape=(chamber_height,chamber_width), dtype=np.int64)
+    chamber[0] = 1
+
+    pile_height = 0
+    cur_rock = 0
+    cur_wind = 0
+    new_rock = True
+    pos = (0,0)
+
+    def print_chamber():
+        lines = []
+        for row in range(pile_height+10):
+            s = "".join([".#"[l] for l in chamber[row]])
+            s = "|" + s + "|"
+            lines.append(list(s))
+        if not new_rock:
+            r = shapes[cur_rock]
+            for i in range(r.shape[0]):
+                for j in range(r.shape[1]):
+                    if r[i,j] == 1:
+                        if pos[0]+i < len(lines):
+                            lines[pos[0]+i][pos[1]+j+1] = "@"
+        lines = list(reversed(lines))
+        print("\n".join(["".join(l) for l in lines]))
+        print()
+
+    c = 0
+    iter = 0
+    observed = {}
+    additional_height = 0
+    cycle_found = False
+    while c < num_rocks:
+        if new_rock:
+            # new rock gets placed
+            pos = (pile_height + 4,2)
+            new_rock = False
+            
+
+            if not cycle_found:
+                # record floor state
+                reached_rock = np.ones((chamber.shape[1],)) * -1
+                i = 0
+                while np.any(reached_rock == -1):
+                    for j,t in enumerate(chamber[pile_height-i]==1):
+                        if t and reached_rock[j] == -1:
+                            reached_rock[j] = i
+                    i += 1
+
+                # this encodes the complete current state
+                key = (cur_wind,cur_rock,tuple(reached_rock))
+
+                # check in our lookup dict
+                if key in observed:
+                    cycle_found = True
+                    c_old,pile_old = observed[key]
+
+                    cycle_len = c - c_old
+                    cycle_start = c_old
+
+                    print(f"{c}: Found cycle: start: {cycle_start}, length: {cycle_len}")
+                    blocks_left = (num_rocks - c)
+                    print(f"{c=},{c_old=}")
+                    print(f"{blocks_left=}")
+                    print(f"{cycle_len=}")
+                    cycles_skipped = blocks_left // cycle_len
+                    print(f"{cycles_skipped=}")
+                    additional_height = cycles_skipped * (pile_height - pile_old)
+                    print(f"{additional_height=}")
+                    num_rocks = blocks_left % cycle_len
+                    c = 0
+                else:
+                    observed[key] = (c,pile_height)
+        elif iter % 2 == 0:
+            # check for collision
+            collision_detected = False
+            r = shapes[cur_rock]
+            for row in range(r.shape[0]):
+                for col in range(r.shape[1]):
+                    if r[row,col]:
+                        if pos[0] + row - 1 < 0:
+                            collision_detected = True
+                            break
+                        if chamber[pos[0]+row-1,pos[1]+col]:
+                            collision_detected = True
+                            break
+
+            if collision_detected:
+                #print("Collision detected")
+                # update chamber
+                r = shapes[cur_rock]
+                chamber[pos[0]:pos[0]+r.shape[0],pos[1]:pos[1]+r.shape[1]] += r
+                new_rock = True
+                cur_rock = (cur_rock + 1) % len(shapes)
+                pile_height = np.argmin(np.any(chamber==1, axis=1)) - 1
+                c += 1
+                #print(f"New {pile_height=}")
+                iter -= 1 # don't count collision as a round
+            else:
+                pos = (pos[0]-1,pos[1])
+        else:
+            dx = [-1,1]["<>".index(wind_directions[cur_wind])]
+            #print("wind:", dx)
+            r = shapes[cur_rock]
+            collision_detected = False
+            for row in range(r.shape[0]):
+                for col in range(r.shape[1]):
+                    if r[row,col]:
+                        if pos[1] + col + dx < 0 or pos[1] + col + dx >= chamber.shape[1]:
+                            collision_detected = True
+                            break
+                        if chamber[pos[0]+row,pos[1]+col+dx]:
+                            collision_detected = True
+                            break
+            if not collision_detected:
+                #print("wind applied")
+                pos = (pos[0],pos[1]+dx)
+            cur_wind = (cur_wind + 1) % len(wind_directions)
+
+        #print(iter)
+        iter = (iter + 1) % 2
+        #print_chamber()
+    return pile_height + additional_height
+
 
 
 
@@ -730,6 +887,5 @@ def main():
         print("Advent has ended you fool 🎅")
 
 if __name__ == "__main__":
-    #main()
-    solve(16)
+    main()
 
