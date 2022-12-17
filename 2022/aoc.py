@@ -4,6 +4,7 @@ import os
 import re
 import sqlite3
 import sys
+from collections import defaultdict
 from copy import deepcopy
 from functools import reduce
 from datetime import datetime
@@ -504,6 +505,96 @@ def day_15(input):
             if np.all(check < 0): return 4000000*x + y
 
 
+def day_16(input):
+    pattern = r"Valve (.*) has flow rate=(\d+); tunnels? leads? to valves? (.*)$"
+    data = re.findall(pattern, input, re.MULTILINE)
+
+    tunnels = {}
+    frs = {}
+    for name,fr,ts in data:
+        tunnels[name] = [n.strip() for n in ts.split(",")]
+        frs[name] = int(fr)
+
+    relevant_tunnels = [k for (k,v) in frs.items() if v > 0]
+    relevant_tunnels.insert(0, "AA")
+    D = np.ones((len(relevant_tunnels),len(relevant_tunnels)), dtype=np.int64) * -1
+    reachable = {}
+
+    for t in tunnels.keys():
+        reachable[t] = set((t,))
+
+    for nsteps in range(0,len(tunnels)+1):
+        for i in range(len(relevant_tunnels)):
+            t = relevant_tunnels[i]
+            new_reachable = set()
+            for conn in reachable[t]:
+                if conn in relevant_tunnels:
+                    j = relevant_tunnels.index(conn)
+                    if D[i,j] == -1:
+                        D[i,j] = nsteps
+                new_reachable |= set(tunnels[conn])
+            reachable[t] = new_reachable
+
+    relevant_frs = np.empty(shape=(D.shape[-1],), dtype=np.int64)
+    for i in range(len(relevant_tunnels)):
+        relevant_frs[i] = frs[relevant_tunnels[i]]
+
+
+
+
+    def compute_water(time_left, cur_path):
+        # no need to compute 16!, we abort once time is out
+        # roughly ~1 million paths we check this way
+        cur_max = 0
+        for next in range(D.shape[0]):
+            if next in cur_path:
+                continue
+            tl = time_left - D[cur_path[-1],next] - 1
+            if tl >= 1:
+                m = compute_water(tl, cur_path + [next])
+                m += tl * relevant_frs[next]
+                if m > cur_max:
+                    cur_max = m
+        return cur_max
+
+    #return compute_water(30, [0])
+
+    def get_paths(time_left, cur_path, blacklist=[]):
+        # we also allow shorter_paths
+        res = [cur_path]
+        for next in range(D.shape[0]):
+            if next in cur_path or next in blacklist:
+                continue
+            tl = time_left - D[cur_path[-1],next] - 1
+            if tl >= 1:
+                res += get_paths(tl, cur_path + [next], blacklist)
+        return res
+
+    def compute_path(path, tl=30):
+        res = 0
+        tl = tl
+        for prev,next in zip(path[:-1],path[1:]):
+            tl -= D[prev,next]
+            tl -= 1
+            res += relevant_frs[next]*tl
+        return res
+
+    ps = get_paths(26, [0])
+    max_seen = 0
+    for p in ps:
+        ele_ps = get_paths(26, [0], blacklist=p)
+        press = compute_path(p, 26)
+        for ele_p in ele_ps:
+            ele_press = compute_path(ele_p, 26)
+            if press+ele_press > max_seen:
+                max_seen = press+ele_press
+
+    return max_seen
+
+
+
+
+
 
 
 def get_session_cookie():
@@ -640,5 +731,5 @@ def main():
 
 if __name__ == "__main__":
     #main()
-    solve(15)
+    solve(16)
 
