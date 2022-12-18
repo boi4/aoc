@@ -751,6 +751,68 @@ def day_17(input):
 
 
 
+def day_18(input):
+    cubes = [[int(a) for a in l.split(",")] for l in input.strip().split("\n")]
+    cubes = np.array(cubes)
+    cubes += 1 # add buffer around all
+    space = np.zeros(shape=np.max(cubes, axis=0)+2, dtype=np.int64)
+    space[cubes[:,0],cubes[:,1],cubes[:,2]] = 1
+
+    count = 0
+    count += np.sum(((space[1:] + space[:-1]) ==  2))
+    count += np.sum((space[:,1:] + space[:,:-1]) ==  2)
+    count += np.sum((space[:,:,1:] + space[:,:,:-1]) ==  2)
+    count = 6*len(cubes)-2*count
+    #return count
+
+
+    # create dijkstra costgrid
+
+    maxint = np.iinfo(np.int64).max
+    costgrid = np.ones(shape=space.shape, dtype=np.int64) * maxint
+    costgrid[0] = 0
+    costgrid[:,0] = 0
+    costgrid[:,:,0] = 0
+    costgrid[-1] = 0
+    costgrid[:,-1] = 0
+    costgrid[:,:,-1] = 0
+
+    def get_neighbors(row,col,depth):
+        return list(zip(*[(row+dr,col+dc,depth+dd)
+                          for (dr,dc,dd) in [(-1,0,0),(1,0,0),(0,-1,0),(0,1,0),(0,0,-1),(0,0,1)]
+                          if 0 <= (row+dr) < costgrid.shape[0] and 0 <= (col+dc) < costgrid.shape[1]
+                          and 0 <= (depth+dd) < costgrid.shape[2]]))
+
+    #for _ in range(np.max(costgrid.shape) + cubes.shape[0]+10):
+    deltas = np.array([[-1,0,0],[1,0,0],[0,-1,0],[0,1,0],[0,0,-1],[0,0,1]])
+    from tqdm import tqdm
+    for _ in tqdm(range(product(costgrid.shape))):
+        for row in range(1,costgrid.shape[0]-1):
+            for col in range(1,costgrid.shape[1]-1):
+                for depth in range(1,costgrid.shape[2]-1):
+                    if space[row,col,depth] == 0:
+                        neighbors = deltas + np.array([row,col,depth])
+                        vals = costgrid[neighbors[:,0],neighbors[:,1],neighbors[:,2]]
+                        mval = np.min(vals)
+                        if mval < maxint and mval < costgrid[row,col,depth]:
+                            costgrid[row,col,depth] = mval + 1
+
+    costgrid[cubes[:,0],cubes[:,1],cubes[:,2]] = 1
+
+    inner_space = np.array((costgrid == maxint), dtype=np.int64)
+    inner_count = 0
+    inner_count += np.sum(((inner_space[1:] + inner_space[:-1]) ==  2))
+    inner_count += np.sum((inner_space[:,1:] + inner_space[:,:-1]) ==  2)
+    inner_count += np.sum((inner_space[:,:,1:] + inner_space[:,:,:-1]) ==  2)
+    inner_count = 6*np.sum(inner_space)-2*inner_count
+    print(inner_count)
+
+    count -= inner_count
+    return count
+
+
+
+
 
 
 
