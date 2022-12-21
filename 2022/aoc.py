@@ -812,6 +812,214 @@ def day_18(input):
 
 
 
+def day_19(input):
+#    input = """
+#    Blueprint 1: Each ore robot costs 4 ore. Each clay robot costs 2 ore. Each obsidian robot costs 3 ore and 14 clay. Each geode robot costs 2 ore and 7 obsidian.
+#Blueprint 2: Each ore robot costs 2 ore. Each clay robot costs 3 ore. Each obsidian robot costs 3 ore and 8 clay. Each geode robot costs 3 ore and 12 obsidian.
+#    """
+    # start with one ore-collecting robot
+    bps = re.findall(r"Blueprint \d+: Each ore robot costs (\d+) ore. Each clay robot costs (\d+) ore. Each obsidian robot costs (\d+) ore and (\d+) clay. Each geode robot costs (\d+) ore and (\d+) obsidian.$", input, re.MULTILINE)
+    assert(len(bps) == len(input.strip().split("\n")))
+
+    # 0: ore, 1: clay, 2: obsidian, 3: geode
+    bps = np.array([[[int(bp[0]),0,0,0],
+                     [int(bp[1]),0,0,0],
+                     [int(bp[2]),int(bp[3]),0,0],
+                     [int(bp[4]),0,int(bp[5]),0]] for bp in bps], dtype=np.int32)
+
+
+    def optimal_geode(bp, duration):
+        # TODO: iterate over lengths and create sets
+        # purge after every length
+        maxes = np.max(bp, axis=0)
+        l = 0
+        queue = [(np.array([0,0,0,0], dtype=np.int32), np.array([1,0,0,0], dtype=np.int32), [])]
+        #observed = set((((0,0,0,0),(1,0,0,0)),))
+        while l < duration:
+            print()
+            print("======================")
+            print("Minute", l+1)
+            print("======================")
+            new_queue = []
+            for inventory, robots, path in queue:
+                buyable = np.all((inventory - bp)>=0, axis=1)
+
+                # if enough saved up, TODO
+                #buyable[:3] &= ((inventory[:3] / (duration - l)) < (maxes[:3]-robots[:3]))
+
+                for i in range(4):
+                    if buyable[i] and (i == 3 or robots[i] < maxes[i]): # can build robot
+                        rarg = robots.copy()
+                        rarg[i] += 1
+                        new_conf = (inventory-bp[i]+robots, rarg,  path + [i])
+                        new_queue.append(new_conf)
+
+                # not building a robot makes only sense if we are saving up for something
+                addempty = False
+                for i in range(4):
+                    if not buyable[i] and np.all(robots[bp[i] > 0] > 0):
+                        addempty = True
+                        break
+                if addempty:
+                    new_conf = (inventory+robots, robots, path + [-1])
+                    new_queue.append(new_conf)
+
+            next = new_queue
+            if l == 20:
+                ii = np.random.permutation(len(next))
+                for i in range(10):
+                    print(next[ii[i]])
+
+            # remove path
+            for i in range(len(next)):
+                next[i] = (next[i][0],next[i][1],[])
+
+
+            if l == duration-1:
+                # skip filtering on last run
+                queue = new_queue
+                break
+
+            
+
+            print("Same inventory filter")
+            # if two solutions have the same inventory config but one has strictly better robots
+            # remove the worse one
+            m = np.array([[a for c in config for a in c] for config in next], dtype=np.int32)
+            m = m[m[:, 3].argsort()]
+            m = m[m[:, 2].argsort(kind='mergesort')] # keep order
+            m = m[m[:, 1].argsort(kind='mergesort')]
+            m = m[m[:, 0].argsort(kind='mergesort')]
+
+            if m.shape[0] > 1:
+                ixs = np.where(np.any(np.diff(m, axis=0)[:,0:4]!=0, axis=1))[0]
+                ixs = [0] + list(ixs + 1) + [m.shape[0]]
+            else:
+                ixs = [0,1]
+            print("max same:", np.max(np.diff(np.array(ixs))))
+
+            def determine_next1(indices):
+                next = []
+                istart,iend = indices
+                for i in range(istart,iend):
+                    found_better = False
+                    for j in range(istart,iend):
+                        if i == j: continue
+                        #assert(np.all(m[i,:4] == m[j,:4]))
+                        if i < j and np.all(m[i,:8] == m[j,:8]):
+                            found_better = True
+                            break
+                        if np.all(m[i,:8] <= m[j,:8]):
+                            found_better = True
+                            break
+                    if not found_better:
+                        next.append((m[i,:4],m[i,4:8],list(m[i,8:])))
+                return next
+
+            import time
+            from pathos.multiprocessing import Pool
+            c1 = time.monotonic()
+            with Pool() as pool:
+                nexts = pool.map(determine_next1, zip(ixs[:-1],ixs[1:]))
+            next = [elem for nx in nexts for elem in nx]
+            c2 = time.monotonic()
+            print(f"took {c2-c1} seconds")
+
+
+
+            print("Same robots filter")
+            # if two solutions have the same robot config but one has strictly better
+            # inventory, remove the worse one
+            m = np.array([[a for c in config for a in c] for config in next], dtype=np.int32)
+            m = m[m[:, 7].argsort(kind='mergesort')]
+            m = m[m[:, 6].argsort(kind='mergesort')] # keep order
+            m = m[m[:, 5].argsort(kind='mergesort')]
+            m = m[m[:, 4].argsort(kind='mergesort')]
+
+            if m.shape[0] > 1:
+                ixs = np.where(np.any(np.diff(m, axis=0)[:,4:8]!=0, axis=1))[0]
+                ixs = [0] + list(ixs + 1) + [m.shape[0]]
+            else:
+                ixs = [0,1]
+            print("max same:", np.max(np.diff(np.array(ixs))))
+
+            LIMIT = 1000
+            def determine_next2(indices):
+                istart,iend = indices
+                tmp = m[istart:iend]
+
+                if tmp.shape[0] == 1:
+                    return [(tmp[0,:4],tmp[0,4:8],list(tmp[0,8:]))]
+
+                if tmp.shape[0] > LIMIT:
+                    # too expensive, just add all of them
+                    next = []
+                    for i in range(tmp.shape[0]):
+                        next.append((tmp[i,:4],tmp[i,4:8],list(tmp[i,8:])))
+                    return next
+
+                # we group them by the ore number
+                tmp = tmp[tmp[:, 0].argsort(kind='mergesort')]
+
+                ixs = np.where(np.diff(tmp[:,0])!=0)[0]
+                ixs = [0] + list(ixs + 1) + [tmp.shape[0]]
+
+                next = []
+                for istart,iend in zip(ixs[:-1],ixs[1:]):
+                    for i in range(istart, iend):
+                        found_better = False
+                        for j in range(istart, tmp.shape[0]):
+                            if i == j: continue
+                            if i < j and np.all(tmp[i,:8] == tmp[j,:8]):
+                                found_better = True
+                                break
+                            if np.all(tmp[i,:8] <= tmp[j,:8]):
+                                found_better = True
+                                break
+                        if not found_better:
+                            next.append((tmp[i,:4],tmp[i,4:8],list(tmp[i,8:])))
+
+                return next
+
+            import time
+            from pathos.multiprocessing import Pool
+            c1 = time.monotonic()
+            with Pool() as pool:
+                nexts = pool.map(determine_next2, zip(ixs[:-1],ixs[1:]))
+            next = [elem for nx in nexts for elem in nx]
+            c2 = time.monotonic()
+            print(f"took {c2-c1} seconds")
+            #assert(len(set([(a,b) for (a,b,_) in next])) == len(next))
+
+            l += 1
+            queue = next
+            print("number of paths before filtering:", len(new_queue))
+            print("number of paths after filtering:", len(queue))
+
+
+
+        return queue
+   
+
+
+#    q = 0
+#    for i,bp in enumerate(bps):
+#        best_configs = optimal_geode(bp, 24)
+#        m = np.array([invent[3] for invent,_,_ in best_configs])
+#        print(bp)
+#        print("#############################################", np.max(m))
+#        print(i, np.max(m), (i+1)*np.max(m))
+#        q += (i+1)*np.max(m)
+#    #return q
+
+    best_ones = []
+    for i,bp in enumerate(bps[:3]):
+        best_configs = optimal_geode(bp, 32)
+        m = np.array([invent[3] for invent,_,_ in best_configs])
+        best_ones.append(np.max(m))
+        print("#############################################", i, np.max(m))
+    return product(best_ones)
+
 
 
 
@@ -949,5 +1157,6 @@ def main():
         print("Advent has ended you fool 🎅")
 
 if __name__ == "__main__":
-    main()
+    #main()
+    solve(19)
 
