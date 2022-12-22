@@ -1047,25 +1047,122 @@ def day_20(input):
 
 
 def day_21(input):
-    input = """
-root: pppw + sjmn
-dbpl: 5
-cczh: sllz + lgvd
-zczc: 2
-ptdq: humn - dvpt
-dvpt: 3
-lfqf: 4
-humn: 5
-ljgn: 2
-sjmn: drzm * dbpl
-sllz: 4
-pppw: cczh / lfqf
-lgvd: ljgn * ptdq
-drzm: hmdt - zczc
-hmdt: 32
-    """
-    pattern = r"(....): ((....) (.) (....)|(\d+))"
-    print([re.match(pattern, line).groups for line in input.strip().split("\n")])
+#    input = """
+#root: pppw + sjmn
+#dbpl: 5
+#cczh: sllz + lgvd
+#zczc: 2
+#ptdq: humn - dvpt
+#dvpt: 3
+#lfqf: 4
+#humn: 5
+#ljgn: 2
+#sjmn: drzm * dbpl
+#sllz: 4
+#pppw: cczh / lfqf
+#lgvd: ljgn * ptdq
+#drzm: hmdt - zczc
+#hmdt: 32
+#    """
+    pattern = r"^(....): ((....) (.) (....)|(\d+))$"
+    l = [re.match(pattern, line).groups() for line in input.strip().split("\n")]
+    monkeys = {}
+    for monkey in l:
+        name, _, arg1, op, arg2, num = monkey
+        if num is not None:
+            num = int(num)
+            monkeys[name] = num
+        else:
+            monkeys[name] = (op, arg1, arg2)
+
+    def eval_monkey(name):
+        v = monkeys[name]
+        if type(v) == type(0): return v
+        op, arg1, arg2 = v
+        match op:
+            case "+": return eval_monkey(arg1) + eval_monkey(arg2)
+            case "-": return eval_monkey(arg1) - eval_monkey(arg2)
+            case "*": return eval_monkey(arg1) * eval_monkey(arg2)
+            case "/": return eval_monkey(arg1) // eval_monkey(arg2)
+
+    #return eval_monkey('root')
+
+    def has_humn(name):
+        if name == "humn": return True
+        v = monkeys[name]
+        if type(v) == int: return False
+        _, arg1, arg2 = v
+        return has_humn(arg1) or has_humn(arg2)
+
+    def resolve(name):
+        if name == "humn":
+            # don't resolve human
+            return
+
+        v = monkeys[name]
+
+        # already resolved
+        if type(v) == int: return
+
+        op, arg1, arg2 = v
+
+        # resolve subtrees
+        resolve(arg1)
+        resolve(arg2)
+
+        v1 = monkeys[arg1]
+        v2 = monkeys[arg2]
+        if type(v1) == type(0) and type(v2) == type(0) and "humn" not in [arg1,arg2]:
+            match op:
+                case "+": v = v1 + v2
+                case "-": v = v1 - v2
+                case "*": v = v1 * v2
+                case "/": v = v1 // v2
+            monkeys[name] = v
+
+
+    side1 = monkeys['root'][1]
+    side2 = monkeys['root'][2]
+    if not has_humn(side2):
+        side2,side1 = side1,side2
+
+    resolve(side1)
+    resolve(side2)
+
+    def solve(lhs, rhs_eq):
+        op,arg1,arg2 = rhs_eq
+        if type(monkeys[arg1]) == type(0):
+            # LNUM = RNUM op x
+            arg1 = monkeys[arg1]
+            match op:
+                case "+": x = lhs - arg1
+                case "-": x = arg1 - lhs
+                case "*": x = lhs // arg1
+                case "/": x = arg1 // lhs
+            if arg2 == "humn":
+                return x
+            else:
+                res = solve(x, monkeys[arg2])
+                return res
+        else:
+            # LNUM = x op RNUM
+            arg2 = monkeys[arg2]
+            match op:
+                case "+": x = lhs - arg2
+                case "-": x = lhs + arg2
+                case "*": x = lhs // arg2
+                case "/": x = lhs * arg2
+            if arg1 == "humn":
+                return x
+            else:
+                res = solve(x, monkeys[arg1])
+                return res
+
+    return solve(monkeys[side1], monkeys[side2])
+
+    #target = eval_monkey(side2)
+
+
 
 
 def get_session_cookie():
