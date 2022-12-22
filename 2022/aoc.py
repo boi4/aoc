@@ -1021,7 +1021,51 @@ def day_19(input):
     return product(best_ones)
 
 
+def day_20(input):
+    task1 = False
+    arr = np.array([int(line) for line in input.strip().split("\n")])
+    N = len(arr)
 
+    if not task1:
+        arr *= 811589153
+
+    pos = list(np.arange(N))
+
+    for _ in range(1 if task1 else 10):
+        for i in range(N):
+            mov = arr[i]
+            j = pos.index(i)
+            if mov > 0:
+                pos = pos[j+1:] + pos[:j]
+                pos.insert(mov%(N-1), i)
+            elif mov < 0:
+                pos = pos[j+1:] + pos[:j]
+                pos.insert(mov%(N-1), i)
+    res = arr[pos]
+    i = list(res).index(0)
+    return res[(i+1000) % N] + res[(i+2000) % N] + res[(i+3000) % N]
+
+
+def day_21(input):
+    input = """
+root: pppw + sjmn
+dbpl: 5
+cczh: sllz + lgvd
+zczc: 2
+ptdq: humn - dvpt
+dvpt: 3
+lfqf: 4
+humn: 5
+ljgn: 2
+sjmn: drzm * dbpl
+sllz: 4
+pppw: cczh / lfqf
+lgvd: ljgn * ptdq
+drzm: hmdt - zczc
+hmdt: 32
+    """
+    pattern = r"(....): ((....) (.) (....)|(\d+))"
+    print([re.match(pattern, line).groups for line in input.strip().split("\n")])
 
 
 def get_session_cookie():
@@ -1158,5 +1202,5 @@ def main():
 
 if __name__ == "__main__":
     #main()
-    solve(19)
+    solve(21)
 
