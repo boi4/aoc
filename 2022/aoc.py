@@ -1165,6 +1165,381 @@ def day_21(input):
 
 
 
+def day_22(input):
+#    input = """
+#        ...#
+#        .#..
+#        #...
+#        ....
+#...#.......#
+#........#...
+#..#....#....
+#..........#.
+#        ...#....
+#        .....#..
+#        .#......
+#        ......#.
+#
+#10R5L5R10L4R5L5
+#    """
+#    input = """
+#    ...#...#
+#    .#..#...
+#    #.......
+#    ......#.
+#    ....
+#    .#..
+#    ....
+#    ..#.
+#...#....
+#........
+#.#.....#
+#........
+#...#
+#....
+#..#.
+#....
+#
+#10R5L5R10L4R5L5
+#    """
+    map,instructions = input.split("\n\n")
+    instructions = re.findall(r'(L|R|\d+)',instructions.strip())
+    instructions = [d if d in "LR" else int(d) for d in instructions]
+    width = max(len(l) for l in map.split("\n"))
+    map = map.strip("\n")
+    map = " \n" + map + "\n " # add empty rows
+    # also fixes that the position gets started at 1 in the exercise :)
+    # convert to array and add empty columns
+    map = np.array([[" .#".index(c) for c in " " + line.ljust(width) + " "] for line in map.split("\n") if len(line) > 0])
+    width  = map.shape[1]
+    height = map.shape[0]
+
+    hstarts = np.argmax(map != 0, axis=1)
+    hstarts[hstarts == 0] = -1
+    hends = width - np.argmax(map[:,::-1] != 0, axis=1)
+    hends[hends == width] = -1
+    hintervals = np.stack((hstarts,hends), axis=1)
+
+    vstarts = np.argmax(map.T != 0, axis=1)
+    vstarts[vstarts == 0] = -1
+    vends = height - np.argmax(map.T[:,::-1] != 0, axis=1)
+    vends[vends == height] = -1
+    vintervals = np.stack((vstarts,vends), axis=1)
+
+
+    #directions = np.array([[0,1],[1,0],[0,-1],[-1,0]])
+    #pos = np.array([1,hintervals[1,0]])
+    #dir = 0
+    #
+    ## visualization
+    #lines = []
+    #for i in range(height):
+    #    line = []
+    #    for j in range(width):
+    #        line += [" .#"[map[i,j]]]
+    #    lines.append(line)
+    #lines[pos[0]][pos[1]] = ">v<^"[dir]
+
+    #for instruction in instructions:
+    #    match instruction:
+    #        case "L":
+    #            dir = (dir - 1) % 4
+    #        case "R":
+    #            dir = (dir + 1) % 4
+    #        case nsteps:
+    #            v = directions[dir]
+    #            for i in range(nsteps):
+    #                next = pos + v
+    #                if map[next[0],next[1]] == 0:
+    #                    match dir:
+    #                        case 0:
+    #                            next[1] = hintervals[pos[0],0]
+    #                        case 1:
+    #                            next[0] = vintervals[pos[1],0]
+    #                        case 2:
+    #                            next[1] = hintervals[pos[0],1] - 1
+    #                        case 3:
+    #                            next[0] = vintervals[pos[1],1] - 1
+    #                        case _: print("Impossible"); return
+
+    #                match map[next[0],next[1]]:
+    #                    case 0:
+    #                        print("Impossible")
+    #                    case 1:
+    #                        pos = next
+    #                    case 2:
+    #                        break
+    #                lines[pos[0]][pos[1]] = ">v<^"[dir]
+
+    #    lines[pos[0]][pos[1]] = ">v<^"[dir]
+
+
+    #print("\n".join("".join(line) for line in lines))
+    #return (1000 * pos[0] + 4 * pos[1] + dir)
+
+
+    directions = np.array([[0,1],[1,0],[0,-1],[-1,0]])
+    a = np.min(np.diff(hintervals)[1:-1])
+    b = np.min(np.diff(vintervals)[1:-1])
+    sidelen = min(a,b)
+    sidemap = np.ones(shape=tuple((np.array(map.shape)-2)//sidelen), dtype=np.int64) * -1
+    sidetiles = []
+    for siderow in range(sidemap.shape[0]):
+        for sidecol in range(sidemap.shape[1]):
+            row = 1+siderow*sidelen
+            col = 1+sidecol*sidelen
+            if map[row,col] != 0:
+                sidemap[siderow,sidecol] = len(sidetiles)
+                sidetiles.append(map[row:row+sidelen,col:col+sidelen])
+
+
+    neighbors = [None] * 6
+    steps     = [None] * 6
+    for side in range(6):
+        # first, construct all paths from tile number `side` to all other tiles
+        rr,cc = np.where(sidemap == side)
+        nullpos = np.array([rr[0],cc[0]])
+        toobserve = set(range(6))
+        toobserve.remove(side)
+        cur_paths = [([side],[nullpos])]
+        all_paths = [([side],[nullpos])]
+        while toobserve:
+            next_paths = []
+            for sides,path in cur_paths:
+                for dir in directions:
+                    next = path[-1] + dir
+                    if 0 <= next[0] < sidemap.shape[0] and \
+                       0 <= next[1] < sidemap.shape[1]:
+                           next_side = sidemap[next[0],next[1]]
+                           if next_side != -1 and next_side in toobserve:
+                               toobserve.remove(next_side)
+                               next_paths.append((sides + [next_side],path + [next]))
+            cur_paths = next_paths
+            all_paths += next_paths
+
+    
+        # get steps and see which neighbor it is
+        myneighbors = [None] * 4
+        mysteps     = [None] * 4
+        for sides,path in all_paths:
+            #print(f"{sides[0]}->{sides[-1]}")
+            v = np.stack(path)
+            dirs = np.diff(v,axis=0)
+            dirs = [np.where(np.all(directions == k,axis=1))[0][0] for k in dirs]
+            s = ""
+            prev = 0 # look to the right
+            for d in dirs:
+                s += ((d-prev)%4)*"R"
+                s += "S"
+                prev = d
+
+            # start is on the bottom
+            # ring is the neighbors around it
+            on_top = False
+            on_ring = False
+            ring_dir = 3 # 3 is top
+            nring_pos = 0 # 4 neighbors count clockwise when viewed from top
+            for c in s:
+                if c == "S":
+                    if not on_top and not on_ring:
+                        on_ring = True
+                    elif not on_top and on_ring:
+                        match ring_dir:
+                            case 0:
+                                nring_pos = (nring_pos + 1) % 4
+                            case 1:
+                                print("This should never happen")
+                            case 2:
+                                nring_pos = (nring_pos - 1)%4
+                            case 3:
+                                nring_pos = (nring_pos + 2) %4
+                                on_ring = False
+                                on_top = True
+                    elif on_top and not on_ring:
+                        on_top = False
+                        on_ring = True
+                        ring_dir = 1
+                if c == "R":
+                    if on_ring:
+                        ring_dir = (ring_dir + 1) % 4
+                    elif on_top:
+                        nring_pos = (nring_pos - 1) % 4
+                    else:
+                        nring_pos = (nring_pos + 1) % 4
+
+            if on_ring:
+                myneighbors[nring_pos] = sides[-1]
+                mysteps[nring_pos] = s
+
+            neighbors[side] = myneighbors
+            steps[side] = mysteps
+
+
+    directions = np.array([[0,1],[1,0],[0,-1],[-1,0]])
+    pos = np.array([0,0])
+    dir = 0
+    side = 0
+    tile = sidetiles[side]
+
+    print(sidemap)
+
+    def print_tile():
+        lines = [[" .#"[n] for n in row] for row in tile]
+        lines[pos[0]][pos[1]] = ">v<^"[dir]
+        print("\n".join("".join(line) for line in lines))
+
+    lines = [[" .#"[n] for n in row] for row in map]
+    def print_map():
+        print("\n".join("".join(line) for line in lines))
+
+
+    for nins,instruction in enumerate(instructions):
+        #print("========================")
+        #print("Instruction:", instruction)
+        match instruction:
+            case "L":
+                dir = (dir - 1) % 4
+            case "R":
+                dir = (dir + 1) % 4
+            case nsteps:
+                for i in range(nsteps):
+                    v = directions[dir]
+                    next = pos + v
+                    if not (0 <= next[0] < sidelen  and 0 <= next[1] < sidelen):
+                        #print(f"{steps[side][dir]=}")
+                        #print(dir)
+                        #print(f"{new_side=}")
+
+                        #print(f"{side=}")
+                        #print(f"{pos=}")
+                        #print(f"{steps[side][dir]=}")
+
+                        # try to model the border on the 12 borders of the cube
+                        border_dir = dir # same as direction when lying (rdlu), if standing it's the counter clockwise corner
+                        border_height = 0 # 0 = floor, 1 == standing, counter clockwise corner of floor edge, 2 == roof
+                        # distance from counter clockwise corner on border
+                        match dir:
+                            case 0:
+                                border_pos = pos[0]
+                            case 1:
+                                border_pos = sidelen - 1 - pos[1]
+                            case 2:
+                                border_pos = sidelen - 1 - pos[0]
+                            case 3:
+                                border_pos = pos[1]
+
+                        tile_dir = 0
+                        for c in steps[side][dir]:
+                            if c == "S":
+                                match border_height:
+                                    case 0:
+                                        match (border_dir - tile_dir) % 4:
+                                            case 0:
+                                                border_dir = (border_dir+2)%4 # opposite direction, stay on the ground
+                                            case 1:
+                                                border_dir = (border_dir+2)%4
+                                                border_height = 1
+                                            case 2:
+                                                border_height = 2 # get lift up
+                                            case 3:
+                                                border_height = 1
+                                    case 1:
+                                        match (border_dir - tile_dir) % 4:
+                                            case 0:
+                                                border_height = 0
+                                                border_dir = (border_dir - 1) % 4
+                                            case 1:
+                                                border_height = 0
+                                            case 2:
+                                                border_height = 2
+                                                border_dir = (border_dir - 1) % 4
+                                            case 3:
+                                                border_height = 2
+                                    case 2:
+                                        match (border_dir - tile_dir) % 4:
+                                            case 0:
+                                                border_height = 0
+                                            case 1:
+                                                border_height = 1
+                                            case 2:
+                                                border_dir = (border_dir + 2) % 4
+                                            case 3:
+                                                border_height = 1
+                                                border_dir = (border_dir + 1) % 4
+                            if c == "R":
+                                tile_dir = (tile_dir + 1) % 4
+                            #print(c)
+                            #print("border:", border_height, border_dir)
+
+                        new_dir = (border_dir + 2) % 4 # going into new tile
+
+                        # with a flip in horiz/vert direciton
+                        match border_dir:
+                            case 0:
+                                next = np.array([sidelen-1-border_pos,sidelen-1])
+                            case 1:
+                                next = np.array([sidelen-1,border_pos])
+                            case 2:
+                                next = np.array([border_pos,0])
+                            case 3:
+                                next = np.array([0,sidelen-1-border_pos])
+                        #match border_dir:
+                        #    case 0:
+                        #        next = np.array([border_pos,sidelen-1])
+                        #    case 1:
+                        #        next = np.array([sidelen-1,sidelen-1-border_pos])
+                        #    case 2:
+                        #        next = np.array([sidelen-1-border_pos,0])
+                        #    case 3:
+                        #        next = np.array([0,border_pos])
+
+                        new_side = neighbors[side][dir]
+                        new_tile = sidetiles[new_side]
+
+                        #print(next, new_side)
+
+                        if new_tile[next[0],next[1]] == 2:
+                            #print("New side:", new_side)
+                            #print("New tile")
+                            #print("tile hit")
+                            break
+                        else:
+                            #print("New side:", new_side)
+                            #print("new pos:", pos[0], pos[1])
+                            #print_tile(new_tile, pos)
+                            side = new_side
+                            tile = new_tile
+                            dir  = new_dir
+                        #print(f"{side=}")
+                        #print(f"{pos=}")
+
+                    match tile[next[0],next[1]]:
+                        case 0:
+                            print("Impossible")
+                        case 1:
+                            pos = next
+                            rr,cc = np.where(sidemap == side)
+                            row = 1+sidelen*rr[0]+pos[0]
+                            col = 1+sidelen*cc[0]+pos[1]
+                            lines[row][col] = ">v<^"[dir]
+                        case 2:
+                            break
+        #print("Side", side)
+        #print_tile()
+
+
+    rr,cc = np.where(sidemap == side)
+    row = 1+sidelen*rr[0]+pos[0]
+    col = 1+sidelen*cc[0]+pos[1]
+
+    print_map()
+    return (1000 * row + 4 * col + dir)
+
+
+
+
+
+
 def get_session_cookie():
     ffpath = os.path.expanduser("~/.mozilla/firefox")
     base,subs,_ = next(os.walk(ffpath))
@@ -1299,5 +1674,5 @@ def main():
 
 if __name__ == "__main__":
     #main()
-    solve(21)
+    solve(22)
 
