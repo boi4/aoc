@@ -1583,6 +1583,95 @@ def day_23(input):
     return (maxrow-minrow+1)*(maxcol-mincol+1)-elves.shape[0]
 
 
+def day_24(input):
+    task1 = False
+    lines = [line for line in input.strip().split("\n")]
+    # add wall on bottom and top, so we avoid annoying bounds check
+    lines = ["#"*len(lines[0])] + lines + ["#"*len(lines[0])]
+    map = np.array([[".#>v<^".index(c) for c in line] for line in lines])
+
+    # 1st row: row, 2nd row: col 3rd row: direction
+    blizzards = np.stack([*np.where(map > 1),map[map > 1]-2])
+    map[map>1] = 0 # remove blizzards from map
+
+    directions = np.array([[0,1,0],[1,0,0],[0,-1,0],[-1,0,0],[0,0,0]])
+
+    start = (1,1)
+    target = (map.shape[0]-2,map.shape[1]-2)
+
+    positions = set((start,))
+    round = 0
+
+    def print_map():
+        lines = [[".#"[c] for c in map[i,:]] for i in range(map.shape[0])]
+        for i in range(blizzards.shape[1]):
+            lines[blizzards[0,i]][blizzards[1,i]] = ">v<^"[blizzards[2,i]]
+
+        lines[start[0]][start[1]] = "S"
+        lines[target[0]][target[1]] = "T"
+
+        for pr,pc in positions:
+            lines[pr][pc] = "E"
+
+        print("\n".join("".join(line) for line in lines))
+
+
+    reached_target = False
+    got_snack = False
+    while True:
+        print(round, len(positions))
+        if round % 20 == 0:
+            print_map()
+        new_positions = set()
+        # move blizzards
+        # maybe think about some way to express this as a matrix vector product
+        for i in range(blizzards.shape[1]):
+            blizzards[:,i] += directions[blizzards[2,i]]
+
+        # add wrap
+        blizzards[0,blizzards[0]==             1] = map.shape[0] - 3
+        blizzards[0,blizzards[0]==map.shape[0]-2] = 2
+        blizzards[1,blizzards[1]==             0] = map.shape[1] - 2
+        blizzards[1,blizzards[1]==map.shape[1]-1] = 1
+        
+        blizzards_num = (blizzards[0] * map.shape[1]) + blizzards[1]
+        blizzard_lookup = set(blizzards_num)
+
+        for pos in positions:
+            for i in range(directions.shape[0]):
+                new_pos = pos + directions[i,:2]
+                if map[new_pos[0],new_pos[1]] == 1:
+                    #print("wall")
+                    continue
+                #if list(new_pos) in blizzards[:2].T.tolist():
+                if (new_pos[0]*map.shape[1]+new_pos[1]) in blizzard_lookup:
+                    #print("Blizzard")
+                    continue
+                new_positions.add(tuple(new_pos))
+
+        positions = new_positions 
+        round += 1
+
+        match (reached_target,got_snack):
+            case False,False:
+                if target in positions:
+                    print("Found target",round)
+                    if task1:
+                        break
+                    reached_target = True
+                    positions = set((target,))
+            case True,False:
+                if start in positions:
+                    print("Got target",round)
+                    got_snack = True
+                    positions = set((start,))
+            case True,True:
+                if target in positions:
+                    print("Found target again",round)
+                    break
+    print(round)
+    return round
+
 
 
 def get_session_cookie():
@@ -1718,6 +1807,5 @@ def main():
         print("Advent has ended you fool 🎅")
 
 if __name__ == "__main__":
-    #main()
-    solve(23)
+    main()
 
