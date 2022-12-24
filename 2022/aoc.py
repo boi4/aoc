@@ -4,7 +4,7 @@ import os
 import re
 import sqlite3
 import sys
-from collections import defaultdict
+from collections import defaultdict,Counter
 from copy import deepcopy
 from functools import reduce
 from datetime import datetime
@@ -1166,42 +1166,6 @@ def day_21(input):
 
 
 def day_22(input):
-#    input = """
-#        ...#
-#        .#..
-#        #...
-#        ....
-#...#.......#
-#........#...
-#..#....#....
-#..........#.
-#        ...#....
-#        .....#..
-#        .#......
-#        ......#.
-#
-#10R5L5R10L4R5L5
-#    """
-#    input = """
-#    ...#...#
-#    .#..#...
-#    #.......
-#    ......#.
-#    ....
-#    .#..
-#    ....
-#    ..#.
-#...#....
-#........
-#.#.....#
-#........
-#...#
-#....
-#..#.
-#....
-#
-#10R5L5R10L4R5L5
-#    """
     map,instructions = input.split("\n\n")
     instructions = re.findall(r'(L|R|\d+)',instructions.strip())
     instructions = [d if d in "LR" else int(d) for d in instructions]
@@ -1538,6 +1502,87 @@ def day_22(input):
 
 
 
+def day_23(input):
+    task1 = False
+    nrounds = 10
+    input_map = np.array([[".#".index(c) for c in line] for line in input.strip().split("\n")], dtype=np.int32)
+    padding = 100
+    map = np.zeros(shape=(2*padding + input_map.shape[0],2*padding + input_map.shape[1]), dtype=np.int32)
+    map[padding:padding+input_map.shape[0],padding:padding+input_map.shape[1]] = input_map
+
+    elves = np.stack(np.where(map==1)).T
+    directions = np.array([
+        [[-1,-1,-1],[-1, 0, 1]], # north
+        [[ 1, 1, 1],[-1, 0, 1]], # south
+        [[-1, 0, 1],[-1,-1,-1]], # west
+        [[-1, 0, 1],[ 1, 1, 1]], # east
+                          ])
+    directions_start = 0
+
+    round = 1
+    while True:
+        # get proposed positions
+        new_elves = np.empty(shape=elves.shape, dtype=np.int32)
+        for elvei in range(new_elves.shape[0]):
+            elve = elves[elvei]
+            if np.sum(map[elve[0]-1:elve[0]+2,elve[1]-1:elve[1]+2]) == 1:
+                new_elves[elvei] = elve
+            else:
+                found = False
+                for diri in range(directions_start,directions_start+4):
+                    dirs = directions[diri % 4]
+                    positions = np.repeat(elve.reshape((-1,1)),dirs.shape[-1],axis=1)+dirs
+                    if np.sum(map[positions[0],positions[1]]) == 0:
+                        new_elves[elvei] = positions[:,1]
+                        found = True
+                        break
+                if not found:
+                    new_elves[elvei] = elve # is this ok?
+
+#        print(f"Round {round}")
+#        print(f"Elves:\n{elves.T}")
+#        print(f"Prop.:\n{new_elves.T}")
+
+        # don't move double proposed positions
+        used_elves = np.empty(shape=elves.shape, dtype=np.int32)
+        c = Counter([tuple(new_elves[i]) for i in range(new_elves.shape[0])])
+        for elvei in range(new_elves.shape[0]):
+            elve = elves[elvei]
+            new_elve = new_elves[elvei]
+            if c[tuple(new_elve)] > 1:
+                used_elves[elvei] = elve # reset to original
+            else:
+                used_elves[elvei] = new_elve
+
+        if not task1 and np.all(used_elves == elves):
+            return round
+
+        #print(f"Used:\n{used_elves.T}")
+        map[elves[:,0],elves[:,1]] = 0
+        map[used_elves[:,0],used_elves[:,1]] = 1
+        
+        elves = used_elves
+        directions_start = (directions_start + 1) % 4
+
+        #minrow = np.min(elves[:,0])
+        #mincol = np.min(elves[:,1])
+        #maxrow = np.max(elves[:,0])
+        #maxcol = np.max(elves[:,1])
+        #print(round)
+        #print(map[minrow:maxrow+1,mincol:maxcol+1])
+
+        if task1 and round == nrounds:
+            break
+        round += 1
+        
+    minrow = np.min(elves[:,0])
+    mincol = np.min(elves[:,1])
+    maxrow = np.max(elves[:,0])
+    maxcol = np.max(elves[:,1])
+
+    return (maxrow-minrow+1)*(maxcol-mincol+1)-elves.shape[0]
+
+
 
 
 def get_session_cookie():
@@ -1674,5 +1719,5 @@ def main():
 
 if __name__ == "__main__":
     #main()
-    solve(22)
+    solve(23)
 
