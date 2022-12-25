@@ -1674,6 +1674,40 @@ def day_24(input):
 
 
 
+def day_25(input):
+    lines = [list(line) for line in input.strip().split()]
+    res = 0
+    for line in lines:
+        s = 0
+        for i,c in enumerate(reversed(line)):
+            match c:
+                case "-":
+                    d = -1
+                case "=":
+                    d = -2
+                case _:
+                    d = int(c)
+            s += pow(5,i) * d
+        res += s
+
+    digits = []
+    while True:
+        k = res % 5
+        if k > 2:
+            k -= 5
+            res += 5
+        digits.append("-" if k == -1 else "=" if k == -2 else str(k))
+        res //= 5
+        if res == 0:
+            break
+    d = "".join(reversed(digits))
+    return d
+
+
+
+
+
+
 def get_session_cookie():
     ffpath = os.path.expanduser("~/.mozilla/firefox")
     base,subs,_ = next(os.walk(ffpath))
