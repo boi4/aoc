@@ -43,6 +43,22 @@ def day_1(inp):
 
 
 
+def day_2(inp):
+    lines = inp.splitlines()
+    ms = [re.match(r"^Game (\d+): (.*)$", line) for line in lines]
+    game_nos = [int(m.groups()[0]) for m in ms]
+    games = [m.groups()[1].split(";") for m in ms]
+    games = [[draw.split(", ") for draw in game] for game in games]
+    games = [[{color.strip().split(" ")[1]: int(color.strip().split(" ")[0]) for color in draw} for draw in game] for game in games]
+
+    color_caps = {'red': 12, 'green': 13, 'blue': 14}
+    games_valid = [all(all(draw.get(color,0)<=cap for color,cap in color_caps.items()) for draw in game) for game in games]
+    answer1 = sum(int(game_no) for game_no,is_valid in zip(game_nos,games_valid) if is_valid)
+
+    min_needed_cubes = [[max(draw.get(color,0) for draw in game) for color in ['red', 'green', 'blue']] for game in games]
+    answer2 = sum(product(game) for game in min_needed_cubes)
+
+    return answer2
 
 
 
