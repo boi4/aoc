@@ -13,6 +13,8 @@ from shutil import copyfile
 import requests
 import numpy as np
 
+YEAR=2023
+
 
 def product(it):
     return reduce(lambda acc,x: acc * x, it, 1)
@@ -78,7 +80,7 @@ def solve(day):
     fname = f"{inputpath}/{day}.txt"
     if not os.path.exists(fname):
         with open(fname, "wb+") as f:
-            url = f"https://adventofcode.com/2022/day/{day}/input"
+            url = f"https://adventofcode.com/{YEAR}/day/{day}/input"
             f.write(s.get(url).content)
 
     with open(fname) as f:
@@ -97,7 +99,7 @@ def submit_solution(session, day, level, answer):
     return True if this solves the problem for first time
     """
     data = {"level": level, "answer": answer}
-    url = f"https://adventofcode.com/2022/day/{day}/answer"
+    url = f"https://adventofcode.com/{YEAR}/day/{day}/answer"
 
     print("Answer:", answer)
     print(f"Submitting solution for day {day}, level {level}...")
@@ -172,7 +174,7 @@ def submit_solution(session, day, level, answer):
 
 def main():
     now = datetime.now()
-    if datetime(2023,12,1,0,0,0) <= now < datetime(2023,12,26,0,0,0):
+    if datetime(YEAR,12,1,0,0,0) <= now < datetime(YEAR,12,26,0,0,0):
        solve(now.day)
     else:
        print("Advent has ended you fool 🎅")
