@@ -61,6 +61,65 @@ def day_2(inp):
     return answer2
 
 
+def day_3(inp):
+    chars = list(str(c) for c in range(10)) + ["."]
+    chars += list(sorted(set(c for c in inp.replace("\n","") if c not in chars)))
+    lines = inp.splitlines()
+    cmap = np.array([[chars.index(c) for c in line] for line in lines])
+    rows,cols = cmap.shape
+
+    is_symbol_map = (cmap > 10)
+    is_symbol_map_padded = np.pad(is_symbol_map, 1, mode="constant", constant_values=False)
+    is_next_to_symbol_map = (np.logical_or.reduce(
+        np.stack([
+            is_symbol_map_padded[2:,2:],
+            is_symbol_map_padded[2:,1:-1],
+            is_symbol_map_padded[2:,:-2],
+            is_symbol_map_padded[1:-1,2:],
+            is_symbol_map_padded[1:-1,1:-1],
+            is_symbol_map_padded[1:-1,:-2],
+            is_symbol_map_padded[:-2,2:],
+            is_symbol_map_padded[:-2,1:-1],
+            is_symbol_map_padded[:-2,:-2],
+        ]),
+    ) > 0)
+    is_digit_map = (cmap < 10)
+
+    numbers = []
+    numbers_positions = []
+    for row in range(0,rows):
+        #l = re.finditer(r"(^|[^\d])(\d+)($|[^\d])", lines[row])
+        l = re.finditer(r"\d+", lines[row])
+        num_pos = []
+        for m in l:
+            number_start,number_end = m.span()
+            number = int(m.group())
+            if any(is_next_to_symbol_map[row,number_start:number_end]):
+                numbers.append(number)
+                num_pos.append((number_start,number_end))
+        numbers_positions.append(num_pos)
+
+    answer1 = sum(numbers)
+
+
+    star_pos = np.argwhere((cmap == chars.index("*")))
+    gear_ratios = []
+    for star_row,star_col in star_pos:
+        matches = set()
+        for dy in range(-1,2):
+            numbers_to_check = numbers_positions[star_row+dy]
+            for number_start,number_end in numbers_to_check:
+                if number_start <= star_col + 1 and star_col <= number_end:
+                    matches.add((star_row+dy,number_start,number_end))
+        matches = list(matches)
+        if len(matches) == 2:
+            gear_ratio = product(int(lines[m[0]][m[1]:m[2]]) for m in matches)
+            gear_ratios.append(gear_ratio)
+
+
+    answer2 = sum(gear_ratios)
+    return answer2
+
 
 
 def get_session_cookie():
