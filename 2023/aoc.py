@@ -122,6 +122,25 @@ def day_3(inp):
 
 
 
+def day_4(inp):
+    lines = [line.split(":")[1].strip() for line in inp.splitlines()]
+    wins = [set(int(a) for a in line.split("|")[0].split()) & set(int(a) for a in line.split("|")[1].split()) for line in lines]
+    num_wins = [len(w) for w in wins]
+    answer1 = sum(pow(2,n-1) if n else 0 for n in num_wins)
+
+    num_cards = [1 for _ in range(len(lines))]
+
+    for i in range(len(lines)):
+        nw =  num_wins[i]
+        nc = num_cards[i]
+        for j in range(i+1,i+nw+1):
+            num_cards[j] += nc
+
+    answer2 = sum(num_cards)
+    return answer2
+
+
+
 def get_session_cookie():
     ffpath = os.path.expanduser("~/.mozilla/firefox")
     base,subs,_ = next(os.walk(ffpath))
