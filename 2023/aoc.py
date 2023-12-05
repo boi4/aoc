@@ -19,6 +19,8 @@ YEAR=2023
 def product(it):
     return reduce(lambda acc,x: acc * x, it, 1)
 
+def flatten(l):
+    return [item for sublist in l for item in sublist]
 
 def day_1(inp):
     lines = inp.splitlines()
@@ -137,6 +139,102 @@ def day_4(inp):
             num_cards[j] += nc
 
     answer2 = sum(num_cards)
+    return answer2
+
+
+def day_5(inp):
+    chunks = inp.split("\n\n")
+    info = {
+        chunk.split(":")[0].strip(): np.array([int(a.strip()) for a in chunk.split(":")[1].strip().split()])
+        for chunk in chunks
+    }
+    seeds = info["seeds"]
+    maps = {map_name: ar.reshape(-1,3) for map_name,ar in info.items() if map_name != "seeds"}
+
+    # sort all maps based on column 1
+    for map_name in maps.keys():
+        maps[map_name] = maps[map_name][np.argsort(maps[map_name][:,1])]
+
+    conversions = defaultdict(list)
+    for map_name in maps.keys():
+        source,destination = map_name.replace(" map","").split("-to-")
+        conversions[source].append(destination)
+
+    # fill inner gaps in mapping with identity
+    for map_name in maps.keys():
+        new_map = []
+        prev_end = 0
+        for row in maps[map_name]:
+            dest_start,src_start,range_len = row
+            if src_start > prev_end:
+                new_map.append([prev_end,prev_end,src_start-prev_end])
+            new_map.append(row)
+            prev_end = src_start + range_len
+        maps[map_name] = np.array(new_map)
+
+    # deterministic conversion path
+    assert(len(l) == 1 for l in conversions.values())
+
+    def transform(value):
+        currency = "seed"
+        while currency != "location":
+            new_currency = conversions[currency][0]
+            mapping = maps[f"{currency}-to-{new_currency} map"]
+            indices = np.where((mapping[:,1] <= value) & (value < (mapping[:,1]+mapping[:,2])))[0]
+            assert(len(indices) <= 1)
+            if len(indices) != 0:
+                value = mapping[indices[0],0] + value - mapping[indices[0],1]
+            currency = new_currency
+        return value
+
+
+    def transform_range_rec(start, end, currency):
+        """
+        return a list of (start, end) tuples
+        """
+        if currency == "location":
+            return [(start,end)]
+        new_currency = conversions[currency][0]
+        mapping = maps[f"{currency}-to-{new_currency} map"]
+
+        # print(start,end,currency)
+
+
+        # create new list of ranges
+        ranges = []
+        if start < mapping[0,1]:
+            # first range
+            ranges += [(start, min(end,mapping[0,1]))]
+        if end > mapping[-1,1]+mapping[-1,2]:
+            # last range
+            ranges += [(max(start,mapping[-1,1]+mapping[-1,2]), end)]
+
+        # could be optimized as mapping is sorted
+        indices = np.where((mapping[:,1] < end) & ((start <= mapping[:,1]+mapping[:,2])))[0]
+
+        for dest_start,src_start,range_len in mapping[indices]:
+            relative_start = max(0,start-src_start)
+            relative_end = min(end - src_start,range_len)
+            ranges.append((dest_start+relative_start,dest_start+relative_end))
+
+        # could merge ranges
+
+        return flatten([transform_range_rec(s,e,new_currency) for s,e in ranges])
+
+
+    def transform_range(start, end):
+        return transform_range_rec(start, end, "seed")
+
+
+    seed_locations = list(map(transform, seeds))
+    answer1 = min(seed_locations)
+
+    seeds = seeds.reshape(-1,2)
+    seeds[:,1] = seeds[:,0] + seeds[:,1]
+
+    #print(min(a[0] for a in transform_range(seeds[0,0], seeds[0,1])))
+    seed_ranges = flatten([transform_range(s,e) for s,e in seeds])
+    answer2 = min(a[0] for a in seed_ranges)
     return answer2
 
 
