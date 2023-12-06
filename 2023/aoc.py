@@ -239,6 +239,42 @@ def day_5(inp):
 
 
 
+def day_6(inp):
+    times = np.array([int(a) for a in inp.split("\n")[0].split(":")[1].strip().split()])
+    distances = np.array([int(a) for a in inp.split("\n")[1].split(":")[1].strip().split()])
+
+    cnts = []
+    for i in range(len(times)):
+        duration = times[i]
+        record = distances[i]
+
+        cnt = 0
+        for possible_waittime in range(duration):
+            new_distance = (duration - possible_waittime)*possible_waittime
+            if new_distance > record: cnt += 1
+        cnts.append(cnt)
+    answer1 = product(cnts)
+
+
+    duration = int(inp.split("\n")[0].split(":")[1].replace(" ", ""))
+    record = int(inp.split("\n")[1].split(":")[1].replace(" ", ""))
+
+    # formula: (duration-t)*t-record > 0 <> t^2 - duration*t + record < 0
+
+    # solve for roots
+    t0 = (duration + np.sqrt(duration**2 - 4*record))/2
+    t1 = (duration - np.sqrt(duration**2 - 4*record))/2
+
+    t0,t1 = min(t0,t1),max(t0,t1)
+
+    answer2 = int(t1) - int(t0) # works only if t0 and t1 are not exactly integers
+    return answer2
+
+
+
+
+
+
 def get_session_cookie():
     ffpath = os.path.expanduser("~/.mozilla/firefox")
     base,subs,_ = next(os.walk(ffpath))
