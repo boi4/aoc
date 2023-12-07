@@ -272,6 +272,54 @@ def day_6(inp):
 
 
 
+def day_7(inp):
+    cards = "23456789TJQKA"
+    hands = np.array([([cards.index(c) for c in a.split()[0]] + [int(a.split()[1])]) for a in inp.strip().splitlines()], dtype=np.float64)
+    N = hands.shape[0]
+    # add new column at front for value of hand
+    hands = np.concatenate((np.zeros((hands.shape[0],1),dtype=hands.dtype),hands),axis=1)
+
+    ctrs = [Counter(hands[i, 1:6]) for i in range(N)]
+    # five of a kind -> 5, four of a kind -> 4, and so on
+    hands[:,0] = [ctr.most_common()[0][1] for ctr in ctrs]
+    # full house check
+    hands[:,0] += [0.5*(len(ctr.most_common()) == 2 and ctr.most_common()[0][1]==3) for ctr in ctrs]
+    # two pair check
+    hands[:,0] += [0.5*(len(ctr.most_common()) == 3 and ctr.most_common()[0][1]==2) for ctr in ctrs]
+
+    # sorty np array by rows, omg so complicated
+    keys = tuple(hands[:, col] for col in range(hands.shape[1] - 1, -1, -1))
+    idx = np.lexsort(keys)
+    hands = hands[idx]
+
+    answer1 = int(np.sum(hands[:,-1] * np.arange(1,N+1)))
+
+    cards = "J23456789TQKA"
+    hands = np.array([([cards.index(c) for c in a.split()[0]] + [int(a.split()[1])]) for a in inp.strip().splitlines()], dtype=np.float64)
+    hands = np.concatenate((np.zeros((hands.shape[0],1),dtype=hands.dtype),hands),axis=1)
+    ctrs = [Counter([a for a in hands[i, 1:6] if a != 0]) for i in range(N)] # exlucde jokers
+    for ctr,hand in zip(ctrs, hands[:,1:6]):
+        if len(ctr) == 0:
+            best_val = cards.index("A")
+        else:
+            best_val = sorted([(b,a) for a,b in ctr.most_common()], reverse=True)[0][1]
+        ctr.update([best_val]*np.sum(hand==0))
+    # five of a kind -> 5, four of a kind -> 4, and so on
+    hands[:,0] = [ctr.most_common()[0][1] for ctr in ctrs]
+    # full house check
+    hands[:,0] += [0.5*(len(ctr.most_common()) == 2 and ctr.most_common()[0][1]==3) for ctr in ctrs]
+    # two pair check
+    hands[:,0] += [0.5*(len(ctr.most_common()) == 3 and ctr.most_common()[0][1]==2) for ctr in ctrs]
+    keys = tuple(hands[:, col] for col in range(hands.shape[1] - 1, -1, -1))
+    idx = np.lexsort(keys)
+    hands = hands[idx]
+
+    answer2 = int(np.sum(hands[:,-1] * np.arange(1,N+1)))
+    return answer2
+
+
+
+
 
 
 
