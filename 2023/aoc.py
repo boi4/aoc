@@ -322,18 +322,6 @@ def day_7(inp):
 
 
 def day_8(inp):
-#    inp = """
-#LR
-#
-#11A = (11B, XXX)
-#11B = (XXX, 11Z)
-#11Z = (11B, XXX)
-#22A = (22B, XXX)
-#22B = (22C, 22C)
-#22C = (22Z, 22Z)
-#22Z = (22B, 22B)
-#XXX = (XXX, XXX)
-#"""
     instrs,rules = inp.strip().split("\n\n")
     instrs = ["LR".index(c) for c in instrs]
     rules = {line.split(" = (")[0]: line[:-1].split(" = (")[1].split(", ") for line in rules.splitlines()}
@@ -400,6 +388,25 @@ def day_8(inp):
 
     return answer2
 
+
+def day_9(inp):
+    sequences = np.array([list(map(int, line.split())) for line in inp.strip().splitlines()])
+
+    def extrapolate(seq):
+        if np.all(seq == 0):
+            return 0
+        toreduce = seq[1:] - seq[:-1]
+        return seq[-1] + extrapolate(toreduce)
+
+    answer1 = np.sum([extrapolate(seq) for seq in sequences])
+
+    def extrapolate2(seq):
+        if np.all(seq == 0):
+            return 0
+        toreduce = seq[1:] - seq[:-1]
+        return seq[0] - extrapolate2(toreduce)
+    answer2 = np.sum([extrapolate2(seq) for seq in sequences])
+    return answer2
 
 
 
@@ -531,8 +538,7 @@ def submit_solution(session, day, level, answer):
 def main():
     now = datetime.now()
     if datetime(YEAR,12,1,0,0,0) <= now < datetime(YEAR,12,26,0,0,0):
-        solve(8)
-       #solve(now.day)
+       solve(now.day)
     else:
        print("Advent has ended you fool 🎅")
 
