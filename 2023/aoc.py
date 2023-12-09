@@ -9,6 +9,7 @@ from copy import deepcopy
 from functools import reduce
 from datetime import datetime
 from shutil import copyfile
+import itertools
 
 import requests
 import numpy as np
@@ -320,6 +321,85 @@ def day_7(inp):
 
 
 
+def day_8(inp):
+#    inp = """
+#LR
+#
+#11A = (11B, XXX)
+#11B = (XXX, 11Z)
+#11Z = (11B, XXX)
+#22A = (22B, XXX)
+#22B = (22C, 22C)
+#22C = (22Z, 22Z)
+#22Z = (22B, 22B)
+#XXX = (XXX, XXX)
+#"""
+    instrs,rules = inp.strip().split("\n\n")
+    instrs = ["LR".index(c) for c in instrs]
+    rules = {line.split(" = (")[0]: line[:-1].split(" = (")[1].split(", ") for line in rules.splitlines()}
+
+    # position = "AAA"
+    # cnt = 0
+    # for instr in itertools.cycle(instrs):
+    #     position = rules[position][instr]
+    #     cnt += 1
+    #     if position == "ZZZ":
+    #         break
+    # answer1 = cnt
+
+    def compute_trajectory(position):
+        # return start_path + cycle
+        i = 0
+        visited = set()
+        track = [(position,i)]
+        visited.add((position,i))
+        while True:
+            position = rules[position][instrs[i]]
+            i = (i+1) % len(instrs)
+            if (position,i) in visited:
+                break
+            visited.add((position,i))
+            track.append((position,i))
+
+        offset = track.index((position,i))
+        start_path = track[:offset]
+        cycle = track[offset:]
+        return start_path,cycle
+
+    positions = [p for p in rules.keys() if p.endswith("A")]
+    trajectories = [compute_trajectory(p) for p in positions]
+    max_start_path_len = max(len(p) for p,_ in trajectories)
+
+    # move for max_start_path_len steps
+    i = 0
+    cnt = 0
+    for _ in range(max_start_path_len):
+        cnt += 1
+        positions = [rules[p][instrs[i]] for p in positions]
+        i = (i+1) % len(instrs)
+        if all(p.endswith("Z") for p in positions):
+            break
+
+    if all(p.endswith("Z") for p in positions):
+        answer2 = cnt
+        return answer2
+
+
+    cycles = [cycle for _,cycle in trajectories]
+    # move cycle so that current position aligns
+    bin_cycles = []
+    for cycle,position in zip(cycles,positions):
+        offset = cycle.index((position,i))
+        cycle = cycle[offset:] + cycle[:offset]
+        bin_cycles.append([p.endswith("Z") for p,_ in cycle])
+
+    # weirdly they all only have 1 z in their cycle
+    # indices = [np.where(np.array(cycle))[0][0] for cycle in bin_cycles]
+    cycle_lens = [len(cycle) for cycle in bin_cycles]
+    answer2 = np.lcm.reduce(cycle_lens)
+
+    return answer2
+
 
 
 
@@ -451,7 +531,8 @@ def submit_solution(session, day, level, answer):
 def main():
     now = datetime.now()
     if datetime(YEAR,12,1,0,0,0) <= now < datetime(YEAR,12,26,0,0,0):
-       solve(now.day)
+        solve(8)
+       #solve(now.day)
     else:
        print("Advent has ended you fool 🎅")
 
