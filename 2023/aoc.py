@@ -409,6 +409,183 @@ def day_9(inp):
     return answer2
 
 
+def day_10(inp):
+    inp = """
+FF7FSF7F7F7F7F7F---7
+L|LJ||||||||||||F--J
+FL-7LJLJ||||||LJL-77
+F--JF--7||LJLJ7F7FJ-
+L---JF-JLJ.||-FJLJJ7
+|F|F-JF---7F7-L7L|7|
+|FFJF7L7F-JF7|JL---7
+7-L-JL7||F7|L7F-7F7|
+L.L7LFJ|||||FJL7||LJ
+L7JLJL-JLJLJL--JLJ.L
+       """
+    cmap = np.array([list(line) for line in inp.strip().splitlines()])
+
+    # origin is top left
+    connections = {
+        '|': [(0,1),(0,-1)],
+        '-': [(1,0),(-1,0)],
+        'L': [(0,-1),(1,0)],
+        'J': [(0,-1,),(-1,0)],
+        '7': [(0,1),(-1,0)],
+        'F': [(0,1),(1,0)],
+    }
+
+    def follow_pipe(startx,starty):
+        x,y = startx,starty
+        tile = cmap[y,x]
+        # start in arbitrary connection
+        dx,dy = connections[tile][0]
+        visited = []
+        while len(visited) == 0 or (x,y) != (startx,starty):
+            visited.append((x,y))
+            x,y = x+dx,y+dy
+            if x < 0 or x >= cmap.shape[1] or y < 0 or y >= cmap.shape[0]:
+                return None # failed, out of bounds
+            tile = cmap[y,x]
+            if tile not in connections.keys():
+                return None # failed
+            if (-dx,-dy) not in connections[tile]:
+                return None # failed, don't connect
+            dx,dy = [d for d in connections[tile] if d != (-dx,-dy)][0]
+
+        return visited
+
+
+    starty,startx = np.argwhere(cmap == "S")[0]
+
+    for symbol in connections.keys():
+        cmap[starty,startx] = symbol
+        pipe = follow_pipe(startx,starty)
+        if pipe is not None: break
+
+    answer1 = int(np.ceil(len(pipe)/2))
+
+
+    # # set all tiles not in pipe to .
+    # for y in range(cmap.shape[0]):
+    #     for x in range(cmap.shape[1]):
+    #         if (x,y) not in pipe:
+    #             cmap[y,x] = "."
+
+    # add . padding around cmap
+    cmap = np.pad(cmap, 1, mode="constant", constant_values=".")
+
+    # build "bridges" where one can squeeze
+    bridges = defaultdict(list)
+
+    # horizontal bridges
+    for y in range(cmap.shape[0]):
+        x = 0
+        while x < cmap.shape[1]-2:
+            # pipe 'entrance'
+            if cmap[y,x] == "." and cmap[y,x+1] in ["F", "L"]:
+                c = cmap[y,x+1]
+                startx = x
+                x += 2
+                # squeeze along pipe
+                while x < cmap.shape[1] and cmap[y,x] == "-":
+                    x += 1
+                # pipe 'exit'
+                if x < cmap.shape[1]-1 and cmap[y,x] == {"F": "7","L":"J"}[c] and cmap[y,x+1] == ".":
+                    bridges[(startx,y)].append((x+1,y))
+                    bridges[(x+1,y)].append((startx,y))
+            x += 1
+
+    # vertical bridges
+    for x in range(cmap.shape[1]):
+        y = 0
+        while y < cmap.shape[0]-1:
+            # pipe 'entrance'
+            if cmap[y,x] == "." and cmap[y+1,x] in ["F", "7"]:
+                c = cmap[y+1,x]
+                starty = y
+                y += 2
+                # squeeze along pipe
+                while y < cmap.shape[0] and cmap[y,x] == "|":
+                    y += 1
+                # pipe 'exit'
+                if y < cmap.shape[0]-1 and cmap[y,x] == {"F": "L","7":"J"}[c] and cmap[y+1,x] == ".":
+                    bridges[(x,starty)].append((x,y+1))
+                    bridges[(x,y+1)].append((x,starty))
+            y += 1
+
+    # find all outside points and change them to "O"
+    tovisit = set([(0,0)])
+    while len(tovisit) > 0:
+        x,y = tovisit.pop()
+        if cmap[y,x] == "O":
+            continue
+        cmap[y,x] = "O"
+
+        # add all bridge ends to tovisit
+        for x2,y2 in bridges[(x,y)]:
+            if cmap[y2,x2] == ".":
+                tovisit.add((x2,y2))
+
+        # add top neighbor
+        if y > 0 and cmap[y-1,x] == ".":
+            tovisit.add((x,y-1))
+        # add bottom neighbor
+        if y < cmap.shape[0]-1 and cmap[y+1,x] == ".":
+            tovisit.add((x,y+1))
+        # add left neighbor
+        if x > 0 and cmap[y,x-1] == ".":
+            tovisit.add((x-1,y))
+        # add right neighbor
+        if x < cmap.shape[1]-1 and cmap[y,x+1] == ".":
+            tovisit.add((x+1,y))
+
+    answer2 = np.sum(cmap == ".")
+    print("\n".join("".join(row) for row in cmap))
+    print(answer2)
+
+
+
+def day_11(inp):
+    orig_map = [list(line) for line in inp.strip().splitlines()]
+    new_map = []
+    for line in orig_map:
+        new_map.append(line)
+        if all(c == "." for c in line):
+            new_map.append(line)
+    flipped_map = list(zip(*new_map))
+    new_map = []
+    for line in flipped_map:
+        new_map.append(line)
+        if all(c == "." for c in line):
+            new_map.append(line)
+    new_map = list(zip(*new_map))
+    cmap = np.array(new_map)
+
+    galaxies = np.argwhere(cmap == "#")
+
+    s = 0
+    for i in range(len(galaxies)):
+        for j in range(i+1,len(galaxies)):
+            dist = np.sum(np.abs(galaxies[i]-galaxies[j]))
+            s += dist
+    answer1 = s
+
+    galaxies2 = np.argwhere(np.array(orig_map) == "#")
+
+    s = 0
+    for i in range(len(galaxies)):
+        for j in range(i+1,len(galaxies)):
+            dist_shifted = np.sum(np.abs(galaxies[i]-galaxies[j]))
+            dist_orig = np.sum(np.abs(galaxies2[i]-galaxies2[j]))
+            s += dist_orig + (dist_shifted - dist_orig)*(1000000-1)
+    answer2 = s
+    return answer2
+
+
+
+
+
+
 
 def get_session_cookie():
     ffpath = os.path.expanduser("~/.mozilla/firefox")
@@ -538,7 +715,8 @@ def submit_solution(session, day, level, answer):
 def main():
     now = datetime.now()
     if datetime(YEAR,12,1,0,0,0) <= now < datetime(YEAR,12,26,0,0,0):
-       solve(now.day)
+       #solve(now.day)
+       solve(11)
     else:
        print("Advent has ended you fool 🎅")
 
