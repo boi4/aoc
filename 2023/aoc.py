@@ -10,9 +10,12 @@ from functools import reduce
 from datetime import datetime
 from shutil import copyfile
 import itertools
+from functools import lru_cache
 
 import requests
 import numpy as np
+from tqdm import tqdm
+from tqdm.contrib.concurrent import process_map
 
 YEAR=2023
 
@@ -586,6 +589,49 @@ def day_11(inp):
 
 
 
+def day_12(inp):
+    lines = inp.strip().splitlines()
+    springs = [line.split(" ")[0] for line in lines]
+    springs_nums = [tuple([int(a) for a in line.split(" ")[1].split(",")]) for line in lines]
+
+    @lru_cache(maxsize=None)
+    def num_pos(spring, nums, inspring):
+        if len(nums) == 0:
+            return 1 if all(c in ".?" for c in spring) else 0
+        if (spring.count("#") + spring.count("?")) < sum(nums):
+            return 0
+        if spring == "":
+            return 1 if sum(nums) == 0 else 0
+
+        match spring[0]:
+            case "#":
+                if nums[0] == 0: return 0
+                return num_pos(spring[1:], (nums[0]-1, *nums[1:]), True)
+            case ".":
+                if inspring:
+                    if nums[0] != 0: return 0
+                    else: return num_pos(spring[1:], nums[1:], False)
+                return num_pos(spring[1:], nums, False)
+            case "?":
+                answer = 0
+                if not inspring or nums[0] == 0:
+                    answer += num_pos("." + spring[1:], nums, inspring)
+                if nums[0] != 0:
+                    answer += num_pos("#" + spring[1:], nums, inspring)
+                return answer
+
+    springs2 = ["?".join([s for _ in range(5)]) for s in springs]
+    springs_nums2 = [5*n for n in springs_nums]
+
+    answer2 = 0
+    for spring,nums in tqdm(list(zip(springs2, springs_nums2))):
+        answer2 += num_pos(spring, nums, False)
+
+    return answer2
+
+
+
+
 
 def get_session_cookie():
     ffpath = os.path.expanduser("~/.mozilla/firefox")
@@ -716,7 +762,7 @@ def main():
     now = datetime.now()
     if datetime(YEAR,12,1,0,0,0) <= now < datetime(YEAR,12,26,0,0,0):
        #solve(now.day)
-       solve(11)
+       solve(12)
     else:
        print("Advent has ended you fool 🎅")
 
