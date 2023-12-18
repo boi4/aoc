@@ -631,6 +631,78 @@ def day_12(inp):
 
 
 
+def day_13(inp):
+    parts = inp.strip().split("\n\n")
+    ps = [np.array([["#.".index(c) for c in line] for line in part.splitlines()]) for part in parts]
+
+    vs = []
+    hs = []
+    for p in ps:
+        vfound = None
+        maxfound = 0
+        for vsplit in range(p.shape[1]):
+            splitsize = min(vsplit, p.shape[1]-vsplit)
+            leftstart = vsplit-splitsize
+            if np.all(p[:,leftstart:vsplit] == np.fliplr(p[:,vsplit:vsplit+splitsize])):
+                if splitsize > maxfound:
+                    vfound = vsplit
+                    maxfound = splitsize
+
+        if vfound is not None:
+            vs.append(vfound)
+            continue
+
+        hfound = None
+        maxfound = 0
+        for hsplit in range(p.shape[0]):
+            splitsize = min(hsplit, p.shape[0]-hsplit)
+            topstart = hsplit-splitsize
+            if np.all(p[topstart:hsplit,:] == np.flipud(p[hsplit:hsplit+splitsize,:])):
+                if splitsize > maxfound:
+                    hfound = hsplit
+                    maxfound = splitsize
+        if hfound is None:
+            print("Ooops")
+        else:
+            hs.append(hfound)
+
+    answer1 = sum(vs) + 100*sum(hs)
+
+
+    vs = []
+    hs = []
+    for p in ps:
+        vfound = None
+        maxfound = 0
+        for vsplit in range(p.shape[1]):
+            splitsize = min(vsplit, p.shape[1]-vsplit)
+            leftstart = vsplit-splitsize
+            if np.sum(np.logical_not(p[:,leftstart:vsplit] == np.fliplr(p[:,vsplit:vsplit+splitsize]))) == 1:
+                if splitsize > maxfound:
+                    vfound = vsplit
+                    maxfound = splitsize
+
+        if vfound is not None:
+            vs.append(vfound)
+            continue
+
+        hfound = None
+        maxfound = 0
+        for hsplit in range(p.shape[0]):
+            splitsize = min(hsplit, p.shape[0]-hsplit)
+            topstart = hsplit-splitsize
+            if np.sum(np.logical_not(p[topstart:hsplit,:] == np.flipud(p[hsplit:hsplit+splitsize,:]))) == 1:
+                if splitsize > maxfound:
+                    hfound = hsplit
+                    maxfound = splitsize
+        if hfound is None:
+            print("Ooops")
+        else:
+            hs.append(hfound)
+
+    answer2 = sum(vs) + 100*sum(hs)
+    return answer2
+
 
 
 def get_session_cookie():
@@ -762,7 +834,7 @@ def main():
     now = datetime.now()
     if datetime(YEAR,12,1,0,0,0) <= now < datetime(YEAR,12,26,0,0,0):
        #solve(now.day)
-       solve(12)
+       solve(13)
     else:
        print("Advent has ended you fool 🎅")
 
