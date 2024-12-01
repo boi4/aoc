@@ -5,8 +5,35 @@ use rusqlite::{Connection, Result as SqlResult};
 use std::{collections::HashMap, fs, process, env};
 
 fn day_1(input: &str) -> Option<String> {
-    print!("{}", input);
-    None
+    let mut first: Vec<u64> = Vec::new();
+    let mut second: Vec<u64> = Vec::new();
+
+    for line in input.trim().split('\n') {
+        let mut parts = line.splitn(2, char::is_whitespace).map(str::trim);
+        if let (Some(first_part), Some(second_part)) = (parts.next(), parts.next()) {
+            if let (Ok(first_num), Ok(second_num)) = (first_part.parse(), second_part.parse()) {
+                first.push(first_num);
+                second.push(second_num);
+            }
+        }
+    }
+
+    // first.sort();
+    // second.sort();
+    // Some(first.iter()
+    //     .zip(second.iter())
+    //     .map(|(f, s)| if f > s { f - s } else { s - f })
+    //     .sum::<u64>().to_string())
+
+    let mut counter_map: HashMap<u64, u64> = HashMap::new();
+
+    let mut sum: u64 = 0;
+    for &item in &first {
+        sum += item * (*counter_map.entry(item).or_insert_with(|| {
+            second.iter().filter(|&&x| x == item).count() as u64
+        }));
+    }
+    Some(sum.to_string())
 }
 
 
@@ -201,7 +228,8 @@ fn solve(client: &Client, year: u32, day: u32) {
         match func(&input) {
             Some(result) => {
                 println!("Result for day {}: {}", day, result);
-                submit_solution(client, &cookie, day, 1, &result, year);
+                // todo check for "You don't seem to be solving the right level."
+                submit_solution(client, &cookie, day, 2, &result, year);
             }
             None => println!("Day {} is not yet implemented.", day),
         }
