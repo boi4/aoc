@@ -3,3 +3,5 @@ a.out
 *.o
 2018/optimization/ex06
 2018/optimization/test
+2024/Cargo.lock
+2024/target

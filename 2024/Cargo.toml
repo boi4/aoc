@@ -1,0 +1,10 @@
+[package]
+name = "aoc-2024"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+reqwest = { version = "0.12", features = ["blocking"] }
+regex = "1.1"
+chrono = "0.4"
+rusqlite = "0.32"
