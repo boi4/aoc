@@ -36,8 +36,67 @@ fn day_1(input: &str) -> Option<String> {
     Some(sum.to_string())
 }
 
+fn day_2_safe(report: &Vec<i64>) -> bool {
+    let mut rm: Vec<i64> = report.clone();
+    if (report[1] - report[0]) < 0 {
+        rm.iter_mut().for_each(|x| *x *= -1);
+    }
+    rm.iter()
+            .zip(rm.iter().skip(1))
+            .map(|(prev, next)| next - prev)
+            .all(
+                |x| 1 <= x && x <= 3
+            )
+}
 
-fn day_2(_: &str) -> Option<String> { None }
+fn day_2(input: &str) -> Option<String> {
+    let inp: Vec<Vec<i64>> = input
+        .lines()
+        .map(|line| {
+            line.split_whitespace()
+                .filter_map(|num| num.parse().ok())
+                .collect()
+        })
+        .collect();
+    // let diffs = inp.into_iter()
+    //     .map(|row| {
+    //         row.iter()
+    //             .zip(row.iter().skip(1))
+    //             .map(|(prev, next)| next - prev)
+    //             .collect()
+    //     }).collect::<Vec<Vec<i64>>>();
+    // let fixed = diffs.into_iter()
+    //     .map(|mut report| {
+    //         if let Some(&first) = report.first() {
+    //             if first < 0 {
+    //                 report.iter_mut().for_each(|x| *x *= -1);
+    //             }
+    //         }
+    //         report
+    //     })
+    //     .collect::<Vec<Vec<i64>>>();
+    // let safe: Vec<u64> = fixed.iter()
+    //     .map(|report| report.iter().all(|&x| 1 <= x && x <= 3) as u64)
+    //     .collect();
+
+    // Some(safe.iter().sum::<u64>().to_string())
+    let possibilities: Vec<Vec<Vec<i64>>> =
+        inp.into_iter()
+        .map(|report| {
+            let mut versions = Vec::new();
+            for i in 0..report.len() {
+                let mut modified_report = report.clone();
+                modified_report.remove(i);
+                versions.push(modified_report);
+            }
+            versions.push(report.clone());
+            versions
+        }).collect();
+    Some(possibilities.iter()
+        .map(|poss_single| (poss_single.iter().any(day_2_safe) as u64))
+        .sum::<u64>().to_string())
+}
+
 fn day_3(_: &str) -> Option<String> { None }
 fn day_4(_: &str) -> Option<String> { None }
 fn day_5(_: &str) -> Option<String> { None }
