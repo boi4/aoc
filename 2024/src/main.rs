@@ -97,7 +97,56 @@ fn day_2(input: &str) -> Option<String> {
         .sum::<u64>().to_string())
 }
 
-fn day_3(_: &str) -> Option<String> { None }
+fn day_3(input: &str) -> Option<String> {
+    let pattern = Regex::new(r"mul\((\d+),(\d+)\)").unwrap();
+    let do_pattern = Regex::new(r"do\(\)").unwrap();
+    let dont_pattern = Regex::new(r"don't\(\)").unwrap();
+    // Some(pattern.captures_iter(input)
+    //        .map(|c| c[1].parse::<u64>().unwrap()*c[2].parse::<u64>().unwrap())
+    //        .sum::<u64>()
+    //        .to_string())
+    let muls : Vec<u64> = pattern.captures_iter(input)
+                          .map(|c| c[1].parse::<u64>().unwrap()*c[2].parse::<u64>().unwrap())
+                          .collect();
+    let mul_indices: Vec<usize> = pattern.captures_iter(input)
+                                  .filter_map(|caps| {
+                                      caps.get(0).map(|m| m.start())
+                                  })
+                                  .collect();
+    let do_indices: Vec<usize> = do_pattern.captures_iter(input)
+                                  .filter_map(|caps| {
+                                      caps.get(0).map(|m| m.start())
+                                  })
+                                  .collect();
+    let dont_indices: Vec<usize> = dont_pattern.captures_iter(input)
+                                  .filter_map(|caps| {
+                                      caps.get(0).map(|m| m.start())
+                                  })
+                                  .collect();
+    let mut do_slice = &do_indices[..];
+    let mut dont_slice = &dont_indices[..];
+    let mut domul = true;
+    let mut mysum = 0;
+    for (ix,&pos) in mul_indices.iter().enumerate() {
+        loop {
+            if do_slice.len() > 0 && do_slice[0] < pos {
+                domul = true;
+                do_slice = &do_slice[1..];
+            } else if dont_slice.len() > 0 && dont_slice[0] < pos {
+                domul = false;
+                dont_slice = &dont_slice[1..];
+            } else {
+                break;
+            }
+        }
+        if domul {
+            mysum += muls[ix];
+        }
+    }
+    Some(mysum.to_string())
+}
+
+
 fn day_4(_: &str) -> Option<String> { None }
 fn day_5(_: &str) -> Option<String> { None }
 fn day_6(_: &str) -> Option<String> { None }
