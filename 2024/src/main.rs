@@ -147,7 +147,63 @@ fn day_3(input: &str) -> Option<String> {
 }
 
 
-fn day_4(_: &str) -> Option<String> { None }
+fn day_4(input: &str) -> Option<String> {
+    let field: Vec<Vec<u8>> = input
+        .lines()
+        .map(|line| line.bytes().collect())
+        .collect();
+    let height = field.len();
+    let width = field[0].len();
+    let mut count: u64 = 0;
+    for y in 0..height {
+        for x in 0..width {
+            for dx in -1..=1 {
+                for dy in -1..=1 {
+                    let mut c = 0;
+                    for i in 0..4 {
+                        let ny = (y as i32) + i*dy;
+                        let nx = (x as i32) + i*dx;
+                        if 0 <= ny && ny < height as i32 &&
+                           0 <= nx && nx < width  as i32 &&
+                           field[ny as usize][nx as usize] == "XMAS".bytes().nth(i as usize).unwrap_or_default()
+                        {
+                            c += 1;
+                        }
+                    }
+                    if c == 4 {
+                        count +=1 ;
+                    }
+                }
+            }
+        }
+    }
+    //Some(count.to_string())
+    println!("{}", count);
+
+    let mut count: u64 = 0;
+    let deltas = [(-1,-1),(1,-1),(1,1),(-1,1)];
+
+    for y in 1..(height-1) {
+        for x in 1..(width-1) {
+            if field[y][x] == b'A' {
+                for i in 0..4 {
+                    let mut c = 0;
+                    for (j, &(dx, dy)) in deltas.iter().enumerate() {
+                        let w = "SSMM".bytes().nth((i + j) % 4).unwrap();
+                        if field[(y as isize + dy) as usize][(x as isize + dx) as usize] == w {
+                            c += 1;
+                        }
+                    }
+                    if c == 4 {
+                        count += 1;
+                    }
+                }
+            }
+        }
+    }
+    Some(count.to_string())
+}
+
 fn day_5(_: &str) -> Option<String> { None }
 fn day_6(_: &str) -> Option<String> { None }
 fn day_7(_: &str) -> Option<String> { None }
