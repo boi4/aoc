@@ -2,7 +2,7 @@ use chrono::prelude::*;
 use regex::Regex;
 use reqwest::blocking::Client;
 use rusqlite::{Connection, Result as SqlResult};
-use std::{collections::HashMap, fs, process, env};
+use std::{collections::HashMap, collections::HashSet, fs, process, env};
 
 fn day_1(input: &str) -> Option<String> {
     let mut first: Vec<u64> = Vec::new();
@@ -204,7 +204,63 @@ fn day_4(input: &str) -> Option<String> {
     Some(count.to_string())
 }
 
-fn day_5(_: &str) -> Option<String> { None }
+fn day_5(input: &str) -> Option<String> {
+    let mut splits = input.trim().split("\n\n");
+
+    let rules_str = splits.next().unwrap();
+    let updates_str = splits.next().unwrap();
+
+    let rules : HashSet<Vec<i64>> = rules_str.lines().map(|line|
+        line.split('|').map(|s| s.trim().parse::<i64>().unwrap()).collect()
+    ).collect();
+    // let rule_numbers: HashSet<i64> = rules.iter().flatten().copied().collect();
+
+    let updates : Vec<Vec<i64>> = updates_str.lines().map(|line|
+        line.split(',').map(|s| s.trim().parse::<i64>().unwrap()).collect()//.filter(|x| rule_numbers.contains(x)).collect()
+    ).collect();
+
+    let mut sum = 0;
+    let mut sum2 = 0;
+    for update in &updates {
+        let mut found_invalid = false;
+        for i in 0..update.len() {
+            for j in (i+1)..update.len() {
+                if !rules.contains(&vec![update[i],update[j]]) {
+                    found_invalid = true;
+                }
+            }
+        }
+        if !found_invalid {
+            sum += update[(update.len()-1)/2];
+        } else {
+            let mut reordered = update.clone();
+            for i in 0..reordered.len() {
+                // find "smallest" element
+                let mut smallest : usize = 0;
+                for j in i..reordered.len() {
+                    let mut found_bigger = false;
+                    for k in i..reordered.len() {
+                        if rules.contains(&vec![reordered[k],reordered[j]]) {
+                            found_bigger = true;
+                            break
+                        }
+                    }
+                    if !found_bigger {
+                        smallest = j;
+                        break;
+                    }
+                }
+                // swap it to the front
+                reordered.swap(i,smallest)
+            }
+            sum2 += reordered[(update.len()-1)/2];
+        }
+    }
+    println!("sum: {}", sum);
+    println!("sum: {}", sum2);
+    Some(sum2.to_string())
+}
+
 fn day_6(_: &str) -> Option<String> { None }
 fn day_7(_: &str) -> Option<String> { None }
 fn day_8(_: &str) -> Option<String> { None }
